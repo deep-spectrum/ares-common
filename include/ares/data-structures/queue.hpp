@@ -84,7 +84,8 @@ class queue_exception : public std::exception {
  * Thread-safe queue implementation.
  * @tparam Type The queue element type.
  */
-template <typename Type> class queue {
+template <typename Type>
+class queue {
   public:
     /**
      * .
@@ -100,7 +101,8 @@ template <typename Type> class queue {
      * Places an item into the queue.
      * @param item The item to place into the queue.
      */
-    template <typename U> void put(U &&item);
+    template <typename U>
+    void put(U &&item);
 
     /**
      * Retrieve and remove an item from the queue.
@@ -186,7 +188,8 @@ class bounded_queue {
      * @tparam U A type compatible with the queue's underlying Type.
      * @param item The element to be added to the queue.
      */
-    template <typename U> void put(U &&item);
+    template <typename U>
+    void put(U &&item);
 
     /**
      * @brief Adds an item to the back of the bounded queue with a timeout.
@@ -222,7 +225,8 @@ class bounded_queue {
      * @note This is the same as calling put(item,
      * std::chrono::milliseconds::zero())
      */
-    template <typename U> void put_nonblocking(U &&item);
+    template <typename U>
+    void put_nonblocking(U &&item);
 
     /**
      * Retrieve and remove an item from the queue.
@@ -284,7 +288,9 @@ class bounded_queue {
     std::condition_variable _space_available;
 };
 
-template <typename Type> template <typename U> void queue<Type>::put(U &&item) {
+template <typename Type>
+template <typename U>
+void queue<Type>::put(U &&item) {
     std::unique_lock<std::mutex> guard(_lock);
 
     _buffer.emplace_back(std::forward<U>(item));
@@ -292,7 +298,8 @@ template <typename Type> template <typename U> void queue<Type>::put(U &&item) {
     _not_empty.notify_one();
 }
 
-template <typename Type> Type queue<Type>::get() {
+template <typename Type>
+Type queue<Type>::get() {
     std::unique_lock<std::mutex> guard(_lock);
 
     _not_empty.wait(guard, [this]() { return _size != 0; });
@@ -319,21 +326,25 @@ Type queue<Type>::get(const std::chrono::milliseconds &timeout_ms) {
     return ret;
 }
 
-template <typename Type> Type queue<Type>::get_nonblocking() {
+template <typename Type>
+Type queue<Type>::get_nonblocking() {
     return get(std::chrono::milliseconds::zero());
 }
 
-template <typename Type> size_t queue<Type>::size() {
+template <typename Type>
+size_t queue<Type>::size() {
     std::unique_lock<std::mutex> guard(_lock);
     return _size;
 }
 
-template <typename Type> bool queue<Type>::empty() {
+template <typename Type>
+bool queue<Type>::empty() {
     std::unique_lock<std::mutex> guard(_lock);
     return _size == 0;
 }
 
-template <typename Type> void queue<Type>::clear() {
+template <typename Type>
+void queue<Type>::clear() {
     std::unique_lock<std::mutex> guard(_lock);
     _size = 0;
     _buffer.clear();

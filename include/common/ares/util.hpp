@@ -17,12 +17,14 @@
 
 namespace py = pybind11;
 
-template <typename T> struct StructParam {
+template <typename T>
+struct StructParam {
     const char *name;
     T *value;
 };
 
-template <typename T> struct is_struct_param : std::false_type {};
+template <typename T>
+struct is_struct_param : std::false_type {};
 
 template <typename T>
 struct is_struct_param<StructParam<T>> : std::true_type {};
@@ -69,15 +71,18 @@ void from_kwargs(const py::kwargs &kwargs, Args &&...args) {
     COND_CODE_0(IS_EMPTY(container_), (Z_SP_CONTAINER(field_, container_)),    \
                 (Z_SP(field_)))
 
-template <typename T> struct NamedValue {
+template <typename T>
+struct NamedValue {
     const char *name;
     const T &value;
     bool check;
 };
 
-template <typename T> struct is_named_value : std::false_type {};
+template <typename T>
+struct is_named_value : std::false_type {};
 
-template <typename T> struct is_named_value<NamedValue<T>> : std::true_type {};
+template <typename T>
+struct is_named_value<NamedValue<T>> : std::true_type {};
 
 /**
  * @brief Converts a variadic list of named values into a Python dictionary with
@@ -139,7 +144,8 @@ py::dict to_dict(Predicate &&check, Default &&default_val, Args &&...args) {
  * @return py::dict A Python dictionary containing the exact keys and values
  * provided.
  */
-template <typename... Args> py::dict to_dict(Args &&...args) {
+template <typename... Args>
+py::dict to_dict(Args &&...args) {
     py::dict dict;
     static_assert(
         (is_named_value<std::decay_t<Args>>::value && ...),
@@ -187,4 +193,3 @@ template <typename... Args> py::dict to_dict(Args &&...args) {
                 (Z_NV(field_, false)))
 
 #endif // ARES_UTIL_HPP
-

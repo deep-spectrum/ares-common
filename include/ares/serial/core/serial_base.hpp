@@ -11,10 +11,10 @@
 #ifndef BELUGA_SERIAL_SERIAL_BASE_HPP
 #define BELUGA_SERIAL_SERIAL_BASE_HPP
 
+#include <ares/serial/core/C-API/serial_common.h>
 #include <chrono>
 #include <cstring>
 #include <exception>
-#include <ares/serial/core/C-API/serial_common.h>
 #include <sstream>
 #include <string>
 #include <vector>

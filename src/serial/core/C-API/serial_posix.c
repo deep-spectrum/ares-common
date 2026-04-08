@@ -8,10 +8,10 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#include <errno.h>
-#include <fcntl.h>
 #include <ares/serial/core/C-API/serial_common.h>
 #include <ares/serial/core/C-API/serial_posix.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>

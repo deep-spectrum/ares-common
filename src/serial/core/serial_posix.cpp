@@ -8,10 +8,10 @@
  * @author tom
  */
 
-#include <cerrno>
 #include <ares/serial/core/C-API/serial_posix.h>
 #include <ares/serial/core/serial_posix.hpp>
 #include <ares/serial/core/utils.hpp>
+#include <cerrno>
 
 namespace SerialInternal {
 void SerialPosix::_init_flow_control() {

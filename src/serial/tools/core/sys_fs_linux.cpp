@@ -8,9 +8,9 @@
  * @author tom
  */
 
+#include <ares/serial/tools/core/sys_fs_linux.hpp>
 #include <fstream>
 #include <glob.h>
-#include <ares/serial/tools/core/sys_fs_linux.hpp>
 
 namespace SerialToolsInternal {
 SysFsLinux::SysFsLinux(const fs::path &dev) : SysFsBase(dev) {

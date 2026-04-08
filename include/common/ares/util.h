@@ -72,4 +72,3 @@ extern "C" {
 #endif
 
 #endif // ARES_UTIL_H
-

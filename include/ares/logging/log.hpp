@@ -11,8 +11,8 @@
 #ifndef LOGGING_LOG_HPP
 #define LOGGING_LOG_HPP
 
-#include <ares/util.h>
 #include <ares/logging/logger.hpp>
+#include <ares/util.h>
 
 /**
  * Logging level values. These should not be used to set logging levels.
@@ -74,7 +74,7 @@
 #define LOG_MODULE_NAME __name__
 
 /**
- * @brief Writes a DBG level message to the log.
+ * @brief Writes a DEBUG level message to the log.
  *
  * @param[in] msg_ A string optionally containing printf valid conversion
  * specifier, followed by as many values as specifiers.
@@ -133,15 +133,54 @@
                                 __VA_ARGS__)),                                 \
                 (__logger__.log(Logger::LogLevel::LOG_LEVEL_CRITICAL, msg_)))
 
+/**
+ * @brief Writes a DEBUG level hex dump and message to the log.
+ *
+ * @param bytes_ The bytes as a std::vector<uint8_t> to dump as hex.
+ * @param len_ The maximum number of bytes to dump.
+ * @param msg_ A message associated with the hex dump
+ */
 #define LOG_DBG_HEXDUMP(bytes_, len_, msg_)                                    \
     __logger__.log_hexdump(Logger::LogLevel::LOG_LEVEL_DBG, msg_, bytes_, len_)
+
+/**
+ * @brief Writes an INFO level hex dump and message to the log.
+ *
+ * @param bytes_ The bytes as a std::vector<uint8_t> to dump as hex.
+ * @param len_ The maximum number of bytes to dump.
+ * @param msg_ A message associated with the hex dump
+ */
 #define LOG_INF_HEXDUMP(bytes_, len_, msg_)                                    \
     __logger__.log_hexdump(Logger::LogLevel::LOG_LEVEL_INFO, msg_, bytes_, len_)
+
+/**
+ * @brief Writes a WARNING level hex dump and message to the log.
+ *
+ * @param bytes_ The bytes as a std::vector<uint8_t> to dump as hex.
+ * @param len_ The maximum number of bytes to dump.
+ * @param msg_ A message associated with the hex dump
+ */
 #define LOG_WRN_HEXDUMP(bytes_, len_, msg_)                                    \
     __logger__.log_hexdump(Logger::LogLevel::LOG_LEVEL_WARN, msg_, bytes_, len_)
+
+/**
+ * @brief Writes a ERROR level hex dump and message to the log.
+ *
+ * @param bytes_ The bytes as a std::vector<uint8_t> to dump as hex.
+ * @param len_ The maximum number of bytes to dump.
+ * @param msg_ A message associated with the hex dump
+ */
 #define LOG_ERR_HEXDUMP(bytes_, len_, msg_)                                    \
     __logger__.log_hexdump(Logger::LogLevel::LOG_LEVEL_ERROR, msg_, bytes_,    \
                            len_)
+
+/**
+ * @brief Writes a CRITICAL ERROR level hex dump and message to the log.
+ *
+ * @param bytes_ The bytes as a std::vector<uint8_t> to dump as hex.
+ * @param len_ The maximum number of bytes to dump.
+ * @param msg_ A message associated with the hex dump
+ */
 #define LOG_CRIT_HEXDUMP(bytes_, len_, msg_)                                   \
     __logger__.log_hexdump(Logger::LogLevel::LOG_LEVEL_CRITICAL, msg_, bytes_, \
                            len_)
