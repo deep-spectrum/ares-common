@@ -12,9 +12,9 @@
 #define BELUGA_SERIAL_SERIAL_POSIX_HPP
 
 #include <chrono>
-#include <serial/core/C-API/serial_common.h>
-#include <serial/core/C-API/serial_posix.h>
-#include <serial/core/serial_base.hpp>
+#include <ares/serial/core/C-API/serial_common.h>
+#include <ares/serial/core/C-API/serial_posix.h>
+#include <ares/serial/core/serial_base.hpp>
 #include <string>
 
 namespace SerialInternal {

@@ -20,7 +20,7 @@ extern "C" {
 #include <sys/time.h>
 #include <unistd.h>
 
-#include <serial/core/C-API/serial_common.h>
+#include <ares/serial/core/C-API/serial_common.h>
 
 /**
  * Configuration attributes for a serial port on a POSIX system.

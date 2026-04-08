@@ -14,7 +14,7 @@
 #include <chrono>
 #include <cstring>
 #include <exception>
-#include <serial/core/C-API/serial_common.h>
+#include <ares/serial/core/C-API/serial_common.h>
 #include <sstream>
 #include <string>
 #include <vector>

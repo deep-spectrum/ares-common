@@ -13,7 +13,7 @@
 #ifndef BELUGA_SERIAL_SERIAL_HPP
 #define BELUGA_SERIAL_SERIAL_HPP
 
-#include <serial/core/serial_posix.hpp>
+#include <ares/serial/core/serial_posix.hpp>
 
 namespace Serial {
 

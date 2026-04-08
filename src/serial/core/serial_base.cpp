@@ -8,7 +8,7 @@
  * @author tom
  */
 
-#include <serial/core/serial_base.hpp>
+#include <ares/serial/core/serial_base.hpp>
 
 namespace SerialInternal {
 

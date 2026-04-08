@@ -11,8 +11,8 @@
 #ifndef LOGGING_LOG_HPP
 #define LOGGING_LOG_HPP
 
-#include <logging/internal/logging_utils.h>
-#include <logging/logger.hpp>
+#include <ares/logging/internal/logging_utils.h>
+#include <ares/logging/logger.hpp>
 
 /**
  * Logging level values. These should not be used to set logging levels.

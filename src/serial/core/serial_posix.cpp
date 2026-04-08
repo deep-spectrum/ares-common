@@ -9,9 +9,9 @@
  */
 
 #include <cerrno>
-#include <serial/core/C-API/serial_posix.h>
-#include <serial/core/serial_posix.hpp>
-#include <serial/core/utils.hpp>
+#include <ares/serial/core/C-API/serial_posix.h>
+#include <ares/serial/core/serial_posix.hpp>
+#include <ares/serial/core/utils.hpp>
 
 namespace SerialInternal {
 void SerialPosix::_init_flow_control() {

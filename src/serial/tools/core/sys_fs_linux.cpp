@@ -10,7 +10,7 @@
 
 #include <fstream>
 #include <glob.h>
-#include <serial/tools/core/sys_fs_linux.hpp>
+#include <ares/serial/tools/core/sys_fs_linux.hpp>
 
 namespace SerialToolsInternal {
 SysFsLinux::SysFsLinux(const fs::path &dev) : SysFsBase(dev) {

@@ -10,8 +10,8 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <serial/core/C-API/serial_common.h>
-#include <serial/core/C-API/serial_posix.h>
+#include <ares/serial/core/C-API/serial_common.h>
+#include <ares/serial/core/C-API/serial_posix.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>

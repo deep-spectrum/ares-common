@@ -8,7 +8,7 @@
  * @author tom
  */
 
-#include <serial/tools/core/sys_fs_common.hpp>
+#include <ares/serial/tools/core/sys_fs_common.hpp>
 #include <sstream>
 
 namespace SerialToolsInternal {
