@@ -3,6 +3,11 @@ project(ares-common)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
+        ${CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES}
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/common"
+        CACHE INTERNAL "Submodule Global Headers")
+
 ###########################################
 # Logging
 ###########################################

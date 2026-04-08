@@ -11,7 +11,7 @@
 #ifndef LOGGING_LOG_HPP
 #define LOGGING_LOG_HPP
 
-#include <ares/logging/internal/logging_utils.h>
+#include <ares/util.h>
 #include <ares/logging/logger.hpp>
 
 /**

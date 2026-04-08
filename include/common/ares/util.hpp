@@ -11,7 +11,7 @@
 #ifndef ARES_UTIL_HPP
 #define ARES_UTIL_HPP
 
-#include <ares-lora-serial/util.h>
+#include <ares/util.h>
 #include <pybind11/pybind11.h>
 #include <type_traits>
 
