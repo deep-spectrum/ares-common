@@ -21,12 +21,13 @@
 #define ZEPHYR_INCLUDE_SYS_SLIST_H_
 
 #include "list_gen.h"
-#include <stdbool.h>
-#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdbool.h>
+#include <stddef.h>
 
 /** @cond INTERNAL_HIDDEN */
 struct _snode {

@@ -214,9 +214,10 @@ py::dict to_dict(Args &&...args) {
  * @param member_ptr Pointer to the field the data member points to.
  * @return Pointer to the parent object.
  */
-template<typename Parent, typename Member>
+template <typename Parent, typename Member>
 Parent *container_of(Member *ptr, Member Parent::*member_ptr) {
-    size_t offset = reinterpret_cast<size_t>(&(static_cast<Parent*>(nullptr)->*member_ptr));
+    size_t offset = reinterpret_cast<size_t>(
+        &(static_cast<Parent *>(nullptr)->*member_ptr));
     return reinterpret_cast<Parent *>(reinterpret_cast<char *>(ptr) - offset);
 }
 
