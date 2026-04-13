@@ -19,7 +19,8 @@
 #include <thread>
 #include <utility>
 
-template <typename Signature> class Task {
+template <typename Signature>
+class Task {
   public:
     explicit Task(std::function<Signature> handler) : handler(handler) {}
     ~Task();
@@ -30,9 +31,11 @@ template <typename Signature> class Task {
     int set_essential(bool essential_task);
     [[nodiscard]] bool get_essential() const;
 
-    template <typename... Args> void start(Args &&...args);
+    template <typename... Args>
+    void start(Args &&...args);
 
-    template <typename... Args> void run(Args &&...args);
+    template <typename... Args>
+    void run(Args &&...args);
 
     int
     join(std::chrono::milliseconds timeout = std::chrono::milliseconds::max());
@@ -49,10 +52,14 @@ template <typename Signature> class Task {
 
     void _join();
 
-    template <typename... Args> void init_task(Args &&...args);
+    template <typename... Args>
+    void init_task(Args &&...args);
 };
 
-template <typename Signature> Task<Signature>::~Task() { this->join(); }
+template <typename Signature>
+Task<Signature>::~Task() {
+    this->join();
+}
 
 template <typename Signature>
 int Task<Signature>::set_name(std::string new_name) {
@@ -63,7 +70,8 @@ int Task<Signature>::set_name(std::string new_name) {
     return 0;
 }
 
-template <typename Signature> const char *Task<Signature>::get_name() const {
+template <typename Signature>
+const char *Task<Signature>::get_name() const {
     return name.c_str();
 }
 
@@ -76,7 +84,8 @@ int Task<Signature>::set_essential(bool essential_task) {
     return 0;
 }
 
-template <typename Signature> bool Task<Signature>::get_essential() const {
+template <typename Signature>
+bool Task<Signature>::get_essential() const {
     return essential;
 }
 
@@ -109,11 +118,13 @@ int Task<Signature>::join(const std::chrono::milliseconds timeout) {
     return -ETIMEDOUT;
 }
 
-template <typename Signature> std::thread::id Task<Signature>::get_id() const {
+template <typename Signature>
+std::thread::id Task<Signature>::get_id() const {
     return thread.get_id();
 }
 
-template <typename Signature> void Task<Signature>::_join() {
+template <typename Signature>
+void Task<Signature>::_join() {
     if (thread.joinable()) {
         thread.join();
     }

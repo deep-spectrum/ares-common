@@ -11,11 +11,11 @@
 #ifndef ARES_WORK_Q_HPP
 #define ARES_WORK_Q_HPP
 
-#include <ares/synchronization/spinlock.hpp>
-#include <ares/synchronization/semaphore.hpp>
 #include "task.hpp"
 #include <ares/data-structures/queue.hpp>
 #include <ares/data-structures/sys/slist.h>
+#include <ares/synchronization/semaphore.hpp>
+#include <ares/synchronization/spinlock.hpp>
 #include <chrono>
 #include <functional>
 #include <thread>

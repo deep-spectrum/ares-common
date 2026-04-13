@@ -8,10 +8,11 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
+#include <ares/synchronization/semaphore.hpp>
 #include <ares/synchronization/spinlock.hpp>
-#include <ares/work-q/work_q.hpp>
 #include <ares/util.h>
 #include <ares/util.hpp>
+#include <ares/work-q/work_q.hpp>
 #include <atomic>
 #include <cstddef>
 #include <mutex>
@@ -66,10 +67,8 @@ static std::shared_ptr<SpinLock> lock = std::make_shared<SpinLock>();
 WorkQ sys_work_q;
 static sys_slist_t pending_cancels;
 
-#include <iostream>
 struct PreMainCaller {
     PreMainCaller() {
-        std::cout << "Starting\n";
         WorkQConfig config = {
             .name = "System Work Queue",
             .no_yield = false,
@@ -87,13 +86,14 @@ static void handle_flush(Work *work) { ARG_UNUSED(work); }
 struct WorkFlusher {
     WorkFlusher() : work(handle_flush) {}
     Work work;
-    ares::bounded_queue<uint8_t> sem;
+
+    ares::semaphore<> sem{0};
 };
 
 struct WorkCanceller {
     sys_snode_t node{};
     Work *work{};
-    ares::bounded_queue<uint8_t> sem;
+    ares::semaphore<> sem{0};
 };
 
 static void flag_clear(uint32_t *flags, uint32_t bit) { *flags &= ~BIT(bit); }
@@ -132,7 +132,7 @@ bool Work::work_flush() {
     lock_.unlock();
 
     if (need_flush) {
-        (void)flusher.sem.get();
+        flusher.sem.lock();
     }
 
     return need_flush;
@@ -156,7 +156,7 @@ bool Work::work_cancel_sync() {
     lock_.unlock();
 
     if (need_wait) {
-        canceller.sem.get();
+        canceller.sem.lock();
     }
 
     return pending;
@@ -537,7 +537,7 @@ void WorkQ::work_queue_main(WorkQ *queue) {
 void WorkQ::finalize_flush_locked(Work *work) {
     WorkFlusher *flusher = container_of(work, &WorkFlusher::work);
     flag_clear(&work->flags, WORK_FLUSHING_BIT);
-    flusher->sem.put_nonblocking(0);
+    flusher->sem.unlock();
 }
 
 void WorkQ::finalize_cancel_locked(Work *work) {
@@ -549,7 +549,7 @@ void WorkQ::finalize_cancel_locked(Work *work) {
     SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&pending_cancels, wc, tmp, node) {
         if (wc->work == work) {
             sys_slist_remove(&pending_cancels, prev, &wc->node);
-            wc->sem.put_nonblocking(0);
+            wc->sem.unlock();
             break;
         }
         prev = &wc->node;
