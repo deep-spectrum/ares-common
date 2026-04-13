@@ -87,3 +87,13 @@ add_library(ares_data_structures INTERFACE)
 # If sources are added, switch INTERFACE to PUBLIC
 target_include_directories(ares_data_structures INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+###########################################
+# Work queue
+###########################################
+
+# TODO: Build option for delayable
+# TODO: Build option for system work queue
+
+add_library(ares_work_q STATIC src/work-q/work_q.cpp)
+set_target_properties(ares_work_q PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(ares_work_q PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
