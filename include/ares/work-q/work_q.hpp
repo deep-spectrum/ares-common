@@ -14,7 +14,6 @@
 #include "task.hpp"
 #include <ares/data-structures/queue.hpp>
 #include <ares/data-structures/sys/slist.h>
-#include <ares/synchronization/semaphore.hpp>
 #include <ares/synchronization/spinlock.hpp>
 #include <chrono>
 #include <functional>
@@ -58,30 +57,32 @@ struct Work {
     bool cancel_sync_locked(WorkCanceller *canceller);
 };
 
-// struct WorkDelayable {
-//     explicit WorkDelayable(const work_handler_t &handler);
-//     explicit WorkDelayable(Work &&work);
-//     WorkDelayable() = delete;
-//
-//     [[nodiscard]] int work_busy_get() const;
-//     [[nodiscard]] bool work_is_pending() const;
-//     // todo: expires_get()
-//     // todo: remaining_get()
-//     bool work_flush();
-//     int work_cancel();
-//     bool work_cancel_sync();
-//
-//     friend WorkDelayable *work_delayable_from_work(Work *work);
-//
-//   private:
-//     Work work;
-//     std::chrono::milliseconds timeout{};
-//     WorkQ *queue = nullptr;
-//
-//     [[nodiscard]] int work_busy_delayable_get_locked() const;
-//     int work_cancel_async_locked();
-//     bool unschedule_locked();
-// };
+#if DELAYABLE_WORK
+struct WorkDelayable {
+    explicit WorkDelayable(const work_handler_t &handler);
+    explicit WorkDelayable(Work &&work);
+    WorkDelayable() = delete;
+
+    [[nodiscard]] int work_busy_get() const;
+    [[nodiscard]] bool work_is_pending() const;
+    // todo: expires_get()
+    // todo: remaining_get()
+    bool work_flush();
+    int work_cancel();
+    bool work_cancel_sync();
+
+    friend WorkDelayable *work_delayable_from_work(Work *work);
+
+  private:
+    Work work;
+    std::chrono::milliseconds timeout{};
+    WorkQ *queue = nullptr;
+
+    [[nodiscard]] int work_busy_delayable_get_locked() const;
+    int work_cancel_async_locked();
+    bool unschedule_locked();
+};
+#endif // DELAYABLE_WORK
 
 struct WorkQConfig {
     const char *name = "";
@@ -105,8 +106,10 @@ class WorkQ {
     int queue_unplug();
     int stop();
     int stop(std::chrono::milliseconds timeout);
-    // int schedule(WorkDelayable *dwork, std::chrono::milliseconds delay);
-    // int reschedule(WorkDelayable *dwork, std::chrono::milliseconds delay);
+#if DELAYABLE_WORK
+    int schedule(WorkDelayable *dwork, std::chrono::milliseconds delay);
+    int reschedule(WorkDelayable *dwork, std::chrono::milliseconds delay);
+#endif // DELAYABLE_WORK
 
     [[nodiscard]] bool plugged() const;
 
@@ -139,17 +142,23 @@ class WorkQ {
     static void finalize_cancel_locked(Work *work);
 };
 
+#if SYS_WORK_QUEUE
 extern WorkQ sys_work_q;
 
-int work_submit_to_queue(WorkQ *queue, Work *work);
 int work_submit(Work *work);
-// int work_schedule_for_queue(WorkQ *queue, WorkDelayable *dwork,
-//                             std::chrono::milliseconds delay);
-// int work_schedule(WorkDelayable *dwork, std::chrono::milliseconds delay);
-// int work_reschedule_for_queue(WorkQ *queue, WorkDelayable *dwork,
-//                               std::chrono::milliseconds delay);
-// int work_reschedule(WorkDelayable *dwork, std::chrono::milliseconds delay);
+#if DELAYABLE_WORK
+int work_schedule(WorkDelayable *dwork, std::chrono::milliseconds delay);
+int work_reschedule(WorkDelayable *dwork, std::chrono::milliseconds delay);
+#endif // DELAYABLE_WORK
+#endif // SYS_WORK_QUEUE
 
-// WorkDelayable *work_delayable_from_work(Work *work);
+int work_submit_to_queue(WorkQ *queue, Work *work);
+#if DELAYABLE_WORK
+int work_schedule_for_queue(WorkQ *queue, WorkDelayable *dwork,
+                            std::chrono::milliseconds delay);
+int work_reschedule_for_queue(WorkQ *queue, WorkDelayable *dwork,
+                              std::chrono::milliseconds delay);
+WorkDelayable *work_delayable_from_work(Work *work);
+#endif // DELAYABLE_WORK
 
 #endif // ARES_WORK_Q_HPP
