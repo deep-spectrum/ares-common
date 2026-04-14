@@ -31,9 +31,11 @@ class timeout_exception : public std::exception {
 
 template <size_t count = 1>
 class semaphore {
+    static_assert(count > 0, "Semaphore must have a positive, non-zero count");
+
   public:
-    semaphore() = delete;
-    explicit semaphore(size_t init_cnt = count);
+    semaphore();
+    explicit semaphore(size_t init_cnt);
 
     void lock();
     void lock(std::chrono::milliseconds timeout);
@@ -46,7 +48,12 @@ class semaphore {
     bounded_queue<uint8_t, count, true> _sem;
 };
 
-semaphore()->semaphore<>;
+template <size_t count>
+semaphore<count>::semaphore() {
+    for (size_t i = 0; i < count; i++) {
+        _sem.put_nonblocking(0);
+    }
+}
 
 template <size_t count>
 semaphore<count>::semaphore(size_t init_cnt) {
