@@ -50,7 +50,7 @@ class Task {
     std::thread thread;
     std::function<Signature> handler;
 
-    void _join();
+    int _join();
 
     template <typename... Args>
     void init_task(Args &&...args);
@@ -106,14 +106,12 @@ void Task<Signature>::run(Args &&...args) {
 template <typename Signature>
 int Task<Signature>::join(const std::chrono::milliseconds timeout) {
     if (timeout == std::chrono::milliseconds::max()) {
-        thread.join();
-        return 0;
+        return _join();
     }
 
     auto status = future.wait_for(timeout);
     if (status == std::future_status::ready) {
-        thread.join();
-        return 0;
+        return _join();
     }
     return -ETIMEDOUT;
 }
@@ -124,10 +122,13 @@ std::thread::id Task<Signature>::get_id() const {
 }
 
 template <typename Signature>
-void Task<Signature>::_join() {
+int Task<Signature>::_join() {
     if (thread.joinable()) {
         thread.join();
+        _locked = false;
+        return 0;
     }
+    return -EALREADY;
 }
 
 template <typename Signature>
