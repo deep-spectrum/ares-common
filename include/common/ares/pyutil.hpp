@@ -192,4 +192,20 @@ py::dict to_dict(Args &&...args) {
                 (Z_NV_CONTAINER(field_, container_, false)),                   \
                 (Z_NV(field_, false)))
 
+/**
+ * Convert an array into a Python tuple.
+ * @tparam T The element type of the array.
+ * @param data The C++ array to convert into a tuple.
+ * @param count The number of items in the array.
+ * @return A Python tuple of the array.
+ */
+template <typename T>
+static py::tuple array_to_tuple(const T *data, size_t count) {
+    py::tuple t(static_cast<py::ssize_t>(count));
+    for (size_t i = 0; i < count; i++) {
+        t[i] = data[i];
+    }
+    return t;
+}
+
 #endif // ARES_PYUTIL_HPP
