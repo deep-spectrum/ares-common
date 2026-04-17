@@ -263,7 +263,7 @@ void Logger::log_hexdump(LogLevel level, const char *msg,
     std::stringstream ss;
     ss << msg << "\n";
     size_t offset =
-        (level == LOG_LEVEL_DBG || level == LOG_LEVEL_ERROR) ? 5 : 7;
+        (level == LOG_LEVEL_DBG || level == LOG_LEVEL_ERROR) ? 6 : 7;
     offset += strlen(_name) + 2;
 
     construct_hexdump(
