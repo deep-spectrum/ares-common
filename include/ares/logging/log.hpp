@@ -226,4 +226,14 @@
         __logger__.set_log_level(__saved_level__);                             \
     } while (false)
 
+/**
+ * Set the logging level of the module. This will not save the old logging
+ * level.
+ * @param new_level The new logging level of the module.
+ */
+#define SET_LOG_LEVEL(new_level)                                               \
+    do {                                                                       \
+        __logger__.set_log_level(Logger::LogLevel::new_level);                 \
+    } while (false)
+
 #endif // LOGGING_LOG_HPP
