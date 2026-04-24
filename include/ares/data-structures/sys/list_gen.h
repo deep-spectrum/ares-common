@@ -7,6 +7,12 @@
 #ifndef ZEPHYR_INCLUDE_SYS_LIST_GEN_H_
 #define ZEPHYR_INCLUDE_SYS_LIST_GEN_H_
 
+#ifdef __cplusplus
+#include <ares/util.hpp>
+#include <type_traits>
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -25,8 +31,15 @@
          (__sn) != NULL;                                                       \
          (__sn) = (__sns), (__sns) = sys_##__lname##_peek_next(__sn))
 
+#ifndef __cplusplus
 #define Z_GENLIST_CONTAINER(__ln, __cn, __n)                                   \
     ((__ln) ? CONTAINER_OF((__ln), __typeof__(*(__cn)), __n) : NULL)
+#else
+#define Z_GENLIST_CONTAINER(__ln, __cn, __n)                                   \
+    ((__ln) ? container_of((__ln),                                             \
+                           &std::remove_reference_t<decltype(*(__cn))>::__n)   \
+            : nullptr)
+#endif
 
 #define Z_GENLIST_PEEK_HEAD_CONTAINER(__lname, __l, __cn, __n)                 \
     Z_GENLIST_CONTAINER(sys_##__lname##_peek_head(__l), __cn, __n)
@@ -226,5 +239,9 @@
         Z_GENLIST_FOR_EACH_NODE(__lname, list, node) { len++; }                \
         return len;                                                            \
     }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ZEPHYR_INCLUDE_SYS_LIST_GEN_H_ */

@@ -87,3 +87,38 @@ add_library(ares_data_structures INTERFACE)
 # If sources are added, switch INTERFACE to PUBLIC
 target_include_directories(ares_data_structures INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+###########################################
+# Synchronization
+###########################################
+
+# If sources are needed in the future, switch to STATIC <source files>
+add_library(ares_synchronization INTERFACE)
+# Uncomment if sources are included in the build
+# set_target_properties(ares_data_structures PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# If sources are added, switch INTERFACE to PUBLIC
+target_include_directories(ares_synchronization INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+###########################################
+# Work queue
+###########################################
+
+option(DELAYABLE_WORK "Enable delayable work support" OFF)
+option(SYS_WORK_QUEUE "Enable system work queue" OFF)
+
+if (DELAYABLE_WORK)
+    message(FATAL_ERROR "Delayable work is not implemented yet")
+    set (_DELAYABLE_WORK 1)
+else ()
+    set (_DELAYABLE_WORK 0)
+endif ()
+
+if (SYS_WORK_QUEUE)
+    set (_SYS_WORK_QUEUE 1)
+else ()
+    set (_SYS_WORK_QUEUE 0)
+endif ()
+
+add_library(ares_work_q STATIC src/work-q/work_q.cpp)
+set_target_properties(ares_work_q PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(ares_work_q PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_definitions(ares_work_q PUBLIC SYS_WORK_QUEUE=${_SYS_WORK_QUEUE} DELAYABLE_WORK=${_DELAYABLE_WORK})
