@@ -118,6 +118,12 @@ class semaphore {
      */
     bool try_lock();
 
+    /**
+     * Retrieve the current semaphore count.
+     * @return The current semaphore count.
+     */
+    size_t get_count();
+
   private:
     bounded_queue<uint8_t, count, true> _sem;
 };
@@ -188,6 +194,11 @@ bool semaphore<count>::try_lock() {
     }
 
     return ret;
+}
+
+template <size_t count>
+size_t semaphore<count>::get_count() {
+    return _sem.size();
 }
 } // namespace ares
 
