@@ -13,8 +13,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_SERIAL_LIST_PORTS_HPP
-#define BELUGA_SERIAL_LIST_PORTS_HPP
+#ifndef ARES_COMMON_SERIAL_LIST_PORTS_HPP
+#define ARES_COMMON_SERIAL_LIST_PORTS_HPP
 
 #include <vector>
 
@@ -39,4 +39,4 @@ using SysFsScanAttr = SerialToolsInternal::SysFsLinuxScanAttr;
 std::vector<SysFS> comports(const SysFsScanAttr &attr = SysFsScanAttr{});
 } // namespace SerialTools
 
-#endif // BELUGA_SERIAL_LIST_PORTS_HPP
+#endif // ARES_COMMON_SERIAL_LIST_PORTS_HPP

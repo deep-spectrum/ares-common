@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_SERIAL_SERIAL_BASE_HPP
-#define BELUGA_SERIAL_SERIAL_BASE_HPP
+#ifndef ARES_COMMON_SERIAL_BASE_HPP
+#define ARES_COMMON_SERIAL_BASE_HPP
 
 #include <ares/serial/core/C-API/serial_common.h>
 #include <chrono>
@@ -545,4 +545,4 @@ class SerialBase {
 };
 } // namespace SerialInternal
 
-#endif // BELUGA_SERIAL_SERIAL_BASE_HPP
+#endif // ARES_COMMON_SERIAL_BASE_HPP

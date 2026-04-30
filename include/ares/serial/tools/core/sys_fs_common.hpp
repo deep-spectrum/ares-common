@@ -9,8 +9,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_SERIAL_SYS_FS_COMMON_HPP
-#define BELUGA_SERIAL_SYS_FS_COMMON_HPP
+#ifndef ARES_COMMON_SERIAL_SYS_FS_COMMON_HPP
+#define ARES_COMMON_SERIAL_SYS_FS_COMMON_HPP
 
 #include <filesystem>
 #include <string>
@@ -103,4 +103,4 @@ class SysFsBase {
 };
 } // namespace SerialToolsInternal
 
-#endif // BELUGA_SERIAL_SYS_FS_COMMON_HPP
+#endif // ARES_COMMON_SERIAL_SYS_FS_COMMON_HPP

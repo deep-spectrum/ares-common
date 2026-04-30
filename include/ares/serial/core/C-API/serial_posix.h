@@ -8,8 +8,8 @@
  * @author tom
  */
 
-#ifndef BELUGA_SERIAL_SERIAL_POSIX_H
-#define BELUGA_SERIAL_SERIAL_POSIX_H
+#ifndef ARES_COMMON_SERIAL_POSIX_H
+#define ARES_COMMON_SERIAL_POSIX_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -190,4 +190,4 @@ int port_set_dtr_state(int fd, bool state);
 }
 #endif
 
-#endif // BELUGA_SERIAL_SERIAL_POSIX_H
+#endif // ARES_COMMON_SERIAL_POSIX_H
