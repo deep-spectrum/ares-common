@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef VERSION_LOGGER_HPP
-#define VERSION_LOGGER_HPP
+#ifndef ARES_COMMON_LOGGER_HPP
+#define ARES_COMMON_LOGGER_HPP
 
 #include <cstdint>
 #include <vector>
@@ -107,4 +107,4 @@ class Logger {
 #endif // defined(USE_PYTHON_LOGGERS)
 };
 
-#endif // VERSION_LOGGER_HPP
+#endif // ARES_COMMON_LOGGER_HPP

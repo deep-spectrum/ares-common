@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef LOGGING_LOG_HPP
-#define LOGGING_LOG_HPP
+#ifndef ARES_COMMON_LOG_HPP
+#define ARES_COMMON_LOG_HPP
 
 #include <ares/logging/logger.hpp>
 #include <ares/util.h>
@@ -236,4 +236,4 @@
         __logger__.set_log_level(Logger::LogLevel::new_level);                 \
     } while (false)
 
-#endif // LOGGING_LOG_HPP
+#endif // ARES_COMMON_LOG_HPP
