@@ -77,6 +77,18 @@ class Logger {
      */
     void log(LogLevel level, const char *fmt, ...) const;
 
+    /**
+     * @brief Log a message with the given level.
+     *
+     * Logs the given message with the given level. If the loggers level is set
+     * higher than the given level, then the message will not be logged.
+     *
+     * @param[in] level The logging message type. Will do nothing if set to
+     * `LOG_LEVEL_OFF`
+     * @param[in] msg Persistent, raw string. Will be displayed for each dump.
+     * @param[in] buf The data to be logged.
+     * @param[in] bytes Length of the data to be logged (in bytes).
+     */
     void log_hexdump(LogLevel level, const char *msg,
                      const std::vector<uint8_t> &buf, std::size_t bytes);
 
