@@ -13,9 +13,9 @@
 
 #include <atomic>
 
+namespace ares {
 /**
  * @class SpinLock
- *
  */
 class SpinLock {
     std::atomic_flag _locked = ATOMIC_FLAG_INIT;
@@ -40,5 +40,6 @@ class SpinLock {
      */
     void unlock() { _locked.clear(std::memory_order_release); }
 };
+} // namespace ares
 
 #endif // ARES_SPINLOCK_HPP
