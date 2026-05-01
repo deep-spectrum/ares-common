@@ -16,6 +16,8 @@
 namespace ares {
 /**
  * @class SpinLock
+ * Spin lock implementation. This will make the thread busy wait until the lock
+ * is available.
  */
 class SpinLock {
     std::atomic_flag _locked = ATOMIC_FLAG_INIT;

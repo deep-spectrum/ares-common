@@ -34,7 +34,7 @@ class queue_exception : public std::exception {
     };
 
     /**
-     * .
+     * Retrieve the exception reason as an enum.
      * @param exc_reason The reason for the queue exception.
      */
     explicit queue_exception(const queue_exception_reason &exc_reason)

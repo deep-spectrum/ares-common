@@ -20,6 +20,10 @@ class NotImplemented : public std::exception {
   public:
     NotImplemented() = default;
 
+    /**
+     * Reason why an exception was thrown.
+     * @return What happened.
+     */
     [[nodiscard]] const char *what() const noexcept override {
         return _message;
     }
