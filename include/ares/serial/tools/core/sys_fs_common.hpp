@@ -9,8 +9,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_SERIAL_SYS_FS_COMMON_HPP
-#define BELUGA_SERIAL_SYS_FS_COMMON_HPP
+#ifndef ARES_COMMON_SERIAL_SYS_FS_COMMON_HPP
+#define ARES_COMMON_SERIAL_SYS_FS_COMMON_HPP
 
 #include <filesystem>
 #include <string>
@@ -84,23 +84,69 @@ class SysFsBase {
      * String with USB relevant information about the device
      * @return The USB device info string
      */
-    std::string usb_info();
+    std::string usb_info() const;
 
   protected:
+    /**
+     * Device path.
+     */
     std::string device_;
+
+    /**
+     * Device name.
+     */
     std::string name_;
+
+    /**
+     * Device description.
+     */
     std::string description_;
+
+    /**
+     * Device hardware ID.
+     */
     std::string hwid_;
+
+    /**
+     * Device serial number.
+     */
     std::string serial_number_;
+
+    /**
+     * Device location.
+     */
     std::string location_;
+
+    /**
+     * Device manufacturer.
+     */
     std::string manufacturer_;
+
+    /**
+     * Device product name.
+     */
     std::string product_;
+
+    /**
+     * Device interface.
+     */
     std::string interface_;
+
+    /**
+     * Vendor ID.
+     */
     uint64_t vid_;
+
+    /**
+     * Product ID.
+     */
     uint64_t pid_;
 
+    /**
+     * Applies the USB description and hardware ID.
+     */
     void apply_usb_info_();
 };
 } // namespace SerialToolsInternal
 
-#endif // BELUGA_SERIAL_SYS_FS_COMMON_HPP
+#endif // ARES_COMMON_SERIAL_SYS_FS_COMMON_HPP

@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_SERIAL_UTILS_HPP
-#define BELUGA_SERIAL_UTILS_HPP
+#ifndef ARES_COMMON_SERIAL_UTILS_HPP
+#define ARES_COMMON_SERIAL_UTILS_HPP
 
 #include <exception>
 
@@ -20,6 +20,10 @@ class NotImplemented : public std::exception {
   public:
     NotImplemented() = default;
 
+    /**
+     * Reason why an exception was thrown.
+     * @return What happened.
+     */
     [[nodiscard]] const char *what() const noexcept override {
         return _message;
     }
@@ -29,4 +33,4 @@ class NotImplemented : public std::exception {
 };
 } // namespace SerialInternal
 
-#endif // BELUGA_SERIAL_UTILS_HPP
+#endif // ARES_COMMON_SERIAL_UTILS_HPP

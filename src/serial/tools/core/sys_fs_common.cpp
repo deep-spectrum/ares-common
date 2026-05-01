@@ -53,13 +53,15 @@ std::string SysFsBase::usb_description() {
     if (!interface_.empty()) {
         std::string description = product_ + " - ";
         return description + interface_;
-    } else if (!product_.empty()) {
+    }
+
+    if (!product_.empty()) {
         return product_;
     }
     return name_;
 }
 
-std::string SysFsBase::usb_info() {
+std::string SysFsBase::usb_info() const {
     std::ostringstream oss;
     oss << "USB VID:PID=" << std::setw(4) << std::setfill('0') << std::uppercase
         << std::hex << vid_;

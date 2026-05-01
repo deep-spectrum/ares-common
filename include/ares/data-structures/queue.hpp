@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef ARES_QUEUE_HPP
-#define ARES_QUEUE_HPP
+#ifndef ARES_COMMON_QUEUE_HPP
+#define ARES_COMMON_QUEUE_HPP
 
 #include <chrono>
 #include <condition_variable>
@@ -34,7 +34,7 @@ class queue_exception : public std::exception {
     };
 
     /**
-     * .
+     * Retrieve the exception reason as an enum.
      * @param exc_reason The reason for the queue exception.
      */
     explicit queue_exception(const queue_exception_reason &exc_reason)
@@ -69,7 +69,7 @@ class queue_exception : public std::exception {
 
     /**
      * Retrieve the exception reason enum.
-     * @return The exception reas as an enum.
+     * @return The exception reason as an enum.
      */
     [[nodiscard]] queue_exception_reason reason() const noexcept {
         return _reason;
@@ -88,18 +88,18 @@ template <typename Type>
 class queue {
   public:
     /**
-     * .
+     * Constructor.
      */
     queue() = default;
 
     /**
-     * .
+     * Destructor.
      */
     ~queue() = default;
 
     /**
      * Places an item into the queue.
-     * @param item The item to place into the queue.
+     * @param[in] item The item to place into the queue.
      */
     template <typename U>
     void put(U &&item);
@@ -131,13 +131,13 @@ class queue {
     Type get_nonblocking();
 
     /**
-     * .
+     * Queue size.
      * @return The number of elements in the queue.
      */
     size_t size();
 
     /**
-     * .
+     * Queue empty.
      * @return `true` if the queue is empty. `false` otherwise.
      */
     bool empty();
@@ -168,12 +168,12 @@ class bounded_queue {
         "ares::bounded_queue - Maximum queue size must be greater than 0.");
 
     /**
-     * .
+     * Constructor.
      */
     bounded_queue() = default;
 
     /**
-     * .
+     * Destructor.
      */
     ~bounded_queue() = default;
 
@@ -181,12 +181,12 @@ class bounded_queue {
      * @brief Adds an item to the back of the queue, transferring ownership if
      * possible.
      *
-     * This method uses perfect forwarding to either copy or move the provided
-     * item into the internal buffer. If a std::unique_ptr or an rvalue is
+     * This method uses forwarding to either copy or move the provided
+     * item into the internal buffer. If a std::unique_ptr or a rvalue is
      * passed, ownership is transferred with zero-copy overhead.
      *
      * @tparam U A type compatible with the queue's underlying Type.
-     * @param item The element to be added to the queue.
+     * @param[in] item The element to be added to the queue.
      */
     template <typename U>
     void put(U &&item);
@@ -194,15 +194,15 @@ class bounded_queue {
     /**
      * @brief Adds an item to the back of the bounded queue with a timeout.
      *
-     * This method uses perfect forwarding to move or copy the item into the
+     * This method uses forwarding to move or copy the item into the
      * next available slot in the internal buffer. If the queue is full, the
      * calling thread will block until space becomes available or the
      * timeout is reached.
      *
      * @tparam U A type compatible with the queue's underlying Type.
-     * @param item The element to be added; ownership is transferred if an
+     * @param[in] item The element to be added; ownership is transferred if a
      * rvalue is passed.
-     * @param timeout_ms The maximum duration to block if the queue is full.
+     * @param[in] timeout_ms The maximum duration to block if the queue is full.
      *                   If zero, the method attempts a non-blocking insertion.
      * @throws queue_exception If the timeout expires before space becomes
      * available.
@@ -213,17 +213,17 @@ class bounded_queue {
     /**
      * @brief Attempts to add an item to the back of the queue without blocking.
      *
-     * This method uses perfect forwarding to move or copy the item into the
+     * This method uses forwarding to move or copy the item into the
      * internal buffer. Unlike the standard put(), this method returns
      * immediately if the queue is full.
      *
      * @tparam U A type compatible with the queue's underlying Type.
-     * @param item The element to be added; ownership is transferred if an
+     * @param[in] item The element to be added; ownership is transferred if a
      * rvalue is passed.
      * @throws queue_exception If the queue is full and the item cannot be added
      * immediately.
-     * @note This is the same as calling put(item,
-     * std::chrono::milliseconds::zero())
+     * @note This is the same as calling
+     * put(item, std::chrono::milliseconds::zero())
      */
     template <typename U>
     void put_nonblocking(U &&item);
@@ -238,9 +238,9 @@ class bounded_queue {
 
     /**
      * Retrieve and remove an item from the queue with a timeout.
-     * @param timeout_ms The maximum amount of time to wait for item to become
-     * ready in the queue. If set to std::chrono::milliseconds::zero(), then
-     * this method will become non-blocking.
+     * @param[in] timeout_ms The maximum amount of time to wait for item to
+     * become ready in the queue. If set to std::chrono::milliseconds::zero(),
+     * then this method will become non-blocking.
      * @return The first item in the queue.
      * @throws queue_exception if timeout expired.
      */
@@ -255,19 +255,19 @@ class bounded_queue {
     Type get_nonblocking();
 
     /**
-     * .
+     * Queue size.
      * @return The number of elements in the queue.
      */
     size_t size();
 
     /**
-     * .
+     * Queue empty.
      * @return `true` if the queue is empty. `false` otherwise.
      */
     bool empty();
 
     /**
-     * .
+     * Queue full.
      * @return `true` if the queue is full. `false` otherwise.
      */
     bool full();
@@ -462,4 +462,4 @@ void bounded_queue<Type, max_size, overwrite>::clear() {
 }
 } // namespace ares
 
-#endif // ARES_QUEUE_HPP
+#endif // ARES_COMMON_QUEUE_HPP

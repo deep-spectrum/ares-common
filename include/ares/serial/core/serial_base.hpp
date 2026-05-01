@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_SERIAL_SERIAL_BASE_HPP
-#define BELUGA_SERIAL_SERIAL_BASE_HPP
+#ifndef ARES_COMMON_SERIAL_BASE_HPP
+#define ARES_COMMON_SERIAL_BASE_HPP
 
 #include <ares/serial/core/C-API/serial_common.h>
 #include <chrono>
@@ -66,7 +66,14 @@ class SerialException : public std::exception {
     }
 
   protected:
+    /**
+     * Standard error code.
+     */
     int code_ = 0;
+
+    /**
+     * Error message.
+     */
     std::string message_;
 };
 
@@ -358,8 +365,7 @@ class SerialBase {
 
     /**
      * Change the RTS (Ready to Send) state.
-     * @param[in] state `true` to enable RTS
-     * @param[in] state `false` to disable RTS
+     * @param[in] state `true` to enable RTS, `false` to disable RTS.
      */
     void rts(bool state);
 
@@ -372,8 +378,7 @@ class SerialBase {
 
     /**
      * Change the DTR (Data Terminal Ready) state.
-     * @param[in] state `true` to enable DTR
-     * @param[in] state `false` to disable DTR
+     * @param[in] state `true` to enable DTR, `false` to disable DTR.
      */
     void dtr(bool state);
 
@@ -520,29 +525,101 @@ class SerialBase {
 
   protected:
     // Protected Attributes
+    /**
+     * Flag indicating port is open.
+     */
     bool is_open_;
+
+    /**
+     * The serial port.
+     */
     std::string port_;
+
+    /**
+     * The serial baud rate.
+     */
     enum BaudRate baudrate_;
+
+    /**
+     * Serial byte size.
+     */
     enum ByteSize bytesize_;
+
+    /**
+     * Serial parity.
+     */
     enum Parity parity_;
+
+    /**
+     * Number of stop bits.
+     */
     enum StopBits stopbits_;
+
+    /**
+     * Read timeout.
+     */
     milliseconds timeout_{};
+
+    /**
+     * Write timeout.
+     */
     milliseconds write_timeout_{};
+
+    /**
+     * X on/off flow control flag.
+     */
     bool xonxoff_;
+
+    /**
+     * RTS/CTS flow control flag.
+     */
     bool rtscts_;
+
+    /**
+     * DSR/DTR flow control flag.
+     */
     bool dsrdtr_;
+
+    /**
+     * Interbyte timeout.
+     */
     int32_t inter_byte_timeout_;
+
+    /**
+     * Ready To Send flag.
+     */
     bool rts_state_;
+
+    /**
+     * Data Terminal Ready flag.
+     */
     bool dtr_state_;
+
+    /**
+     * Exclusive port access.
+     */
     bool exclusive_;
 
     // Internal Routines
 
     // Platform defined internal routines
+    /**
+     * Reconfigure the port. This needs to be overridden in the implementation.
+     */
     virtual void reconfigure_port_() = 0;
+
+    /**
+     * Update the ready to send flag. This must be overridden in the
+     * implementation.
+     */
     virtual void update_rts_state_() = 0;
+
+    /**
+     * Update the data terminal ready flag. This must be overridden in the
+     * implementation.
+     */
     virtual void update_dtr_state_() = 0;
 };
 } // namespace SerialInternal
 
-#endif // BELUGA_SERIAL_SERIAL_BASE_HPP
+#endif // ARES_COMMON_SERIAL_BASE_HPP

@@ -8,8 +8,8 @@
  * @author tom
  */
 
-#ifndef BELUGA_SERIAL_SERIAL_POSIX_H
-#define BELUGA_SERIAL_SERIAL_POSIX_H
+#ifndef ARES_COMMON_SERIAL_POSIX_H
+#define ARES_COMMON_SERIAL_POSIX_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -57,7 +57,7 @@ int open_port(const char *port);
 int configure_port(struct SerialPosixConfig *config);
 
 /**
- * @Brief Reads data from a serial port with a timeout.
+ * @brief Reads data from a serial port with a timeout.
  * @param[in] fd The file descriptor of the serial port.
  * @param[in,out] buf The buffer to store the read data.
  * @param[in] nbytes The number of bytes to read.
@@ -190,4 +190,4 @@ int port_set_dtr_state(int fd, bool state);
 }
 #endif
 
-#endif // BELUGA_SERIAL_SERIAL_POSIX_H
+#endif // ARES_COMMON_SERIAL_POSIX_H

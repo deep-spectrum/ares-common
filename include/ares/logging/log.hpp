@@ -8,15 +8,14 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef LOGGING_LOG_HPP
-#define LOGGING_LOG_HPP
+#ifndef ARES_COMMON_LOG_HPP
+#define ARES_COMMON_LOG_HPP
 
 #include <ares/logging/logger.hpp>
 #include <ares/util.h>
 
 /**
- * Logging level values. These should not be used to set logging levels.
- * @{
+ * @cond doxygen_suppress
  */
 #define Z_LOG_LEVEL_DBG  0
 #define Z_LOG_LEVEL_INF  1
@@ -24,14 +23,7 @@
 #define Z_LOG_LEVEL_ERR  3
 #define Z_LOG_LEVEL_CRIT 4
 #define Z_LOG_LEVEL_OFF  5
-/**
- * @}
- */
 
-/**
- * Default logging level.
- * @{
- */
 #if LOG_LEVEL == Z_LOG_LEVEL_DBG
 #define DEFAULT_LOG_LEVEL Logger::LogLevel::LOG_LEVEL_DBG
 #elif LOG_LEVEL == Z_LOG_LEVEL_INF
@@ -45,9 +37,6 @@
 #else
 #define DEFAULT_LOG_LEVEL Logger::LogLevel::LOG_LEVEL_OFF
 #endif
-/**
- * @}
- */
 
 #define Z_REGISTER_LOGGER_DEFAULT(name_)                                       \
     static const char *__name__ = #name_;                                      \
@@ -57,6 +46,9 @@
     static const char *__name__ = #name_;                                      \
     static Logger __logger__(__name__, Logger::LogLevel::level_);              \
     static Logger::LogLevel __saved_level__ = Logger::LogLevel::level_;
+/**
+ * @endcond
+ */
 
 /**
  * Registers a module specific logger. This takes in the module name and
@@ -236,4 +228,4 @@
         __logger__.set_log_level(Logger::LogLevel::new_level);                 \
     } while (false)
 
-#endif // LOGGING_LOG_HPP
+#endif // ARES_COMMON_LOG_HPP

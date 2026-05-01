@@ -10,8 +10,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_SERIAL_SERIAL_HPP
-#define BELUGA_SERIAL_SERIAL_HPP
+#ifndef ARES_COMMON_SERIAL_HPP
+#define ARES_COMMON_SERIAL_HPP
 
 #include <ares/serial/core/serial_posix.hpp>
 
@@ -31,7 +31,7 @@ class Serial : public SerialInternal::SerialPosix {
      * @param[in] attr The serial attributes to initialize the port with
      */
     explicit Serial(const SerialAttributes &attr = SerialAttributes{})
-        : SerialInternal::SerialPosix(attr) {}
+        : SerialPosix(attr) {}
     ~Serial() override = default;
 
     // Disallow copy and move
@@ -42,4 +42,4 @@ class Serial : public SerialInternal::SerialPosix {
 };
 } // namespace Serial
 
-#endif // BELUGA_SERIAL_SERIAL_HPP
+#endif // ARES_COMMON_SERIAL_HPP

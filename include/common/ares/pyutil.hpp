@@ -17,10 +17,18 @@
 
 namespace py = pybind11;
 
+/**
+ * @struct StructParam
+ * @tparam T The type of the value
+ *
+ * @brief Key-value pair for struct parameters.
+ *
+ * @note This should not be used directly. Instead, use SP().
+ */
 template <typename T>
 struct StructParam {
-    const char *name;
-    T *value;
+    const char *name; ///< Struct field name.
+    T *value;         ///< Value of that field.
 };
 
 template <typename T>
@@ -52,10 +60,17 @@ void from_kwargs(const py::kwargs &kwargs, Args &&...args) {
 
     (process(std::forward<Args>(args)), ...);
 }
+
+/**
+ * @cond doxygen_suppress
+ */
 #define Z_SP(field_)                                                           \
     StructParam<decltype(field_)> { #field_, &(field_) }
 #define Z_SP_CONTAINER(field_, container_)                                     \
     StructParam<decltype((container_).field_)> { #field_, &(container_).field_ }
+/**
+ * @endcond
+ */
 
 /**
  * @brief Wraps a field into a StructParam struct.
@@ -71,11 +86,19 @@ void from_kwargs(const py::kwargs &kwargs, Args &&...args) {
     COND_CODE_0(IS_EMPTY(container_), (Z_SP_CONTAINER(field_, container_)),    \
                 (Z_SP(field_)))
 
+/**
+ * @struct NamedValue
+ * @tparam T Value type.
+ *
+ * @brief Key-value pair for struct parameters.
+ *
+ * @note This should not be used directly. Instead, use NV() OR NV_NO_CHECK().
+ */
 template <typename T>
 struct NamedValue {
-    const char *name;
-    const T &value;
-    bool check;
+    const char *name; ///< Field name.
+    const T &value;   ///< Field value.
+    bool check;       ///< Flag indicating if a check should be performed.
 };
 
 template <typename T>
@@ -154,6 +177,9 @@ py::dict to_dict(Args &&...args) {
     return dict;
 }
 
+/**
+ * @cond doxygen_suppress
+ */
 #define Z_NV(field_, check_)                                                   \
     NamedValue<decltype(field_)> { #field_, field_, check_ }
 
@@ -161,6 +187,9 @@ py::dict to_dict(Args &&...args) {
     NamedValue<decltype((container_).field_)> {                                \
 #field_, (container_).field_, check_                                   \
     }
+/**
+ * @endcond
+ */
 
 /**
  * @brief Wraps a field into a NamedValue struct with checking enabled.
@@ -201,7 +230,7 @@ py::dict to_dict(Args &&...args) {
  */
 template <typename T>
 static py::tuple array_to_tuple(const T *data, size_t count) {
-    py::tuple t(static_cast<py::ssize_t>(count));
+    py::tuple t(count);
     for (size_t i = 0; i < count; i++) {
         t[i] = data[i];
     }

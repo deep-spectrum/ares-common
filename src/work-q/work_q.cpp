@@ -17,6 +17,7 @@
 #include <mutex>
 #include <utility>
 
+namespace ares {
 #define BIT(n) (1UL << (n))
 
 enum {
@@ -375,7 +376,7 @@ int WorkQ::queue_unplug() {
 
 int WorkQ::stop() { return stop(std::chrono::milliseconds::max()); }
 
-int WorkQ::stop(std::chrono::milliseconds timeout) {
+int WorkQ::stop(const std::chrono::milliseconds &timeout) {
     std::unique_lock lock_(*lock);
 
     if (!flag_test(&flags, WORK_QUEUE_STARTED_BIT)) {
@@ -559,6 +560,10 @@ void WorkQ::finalize_cancel_locked(Work *work) {
 }
 
 int work_submit_to_queue(WorkQ *queue, Work *work) {
+    if (queue == nullptr) {
+        return -EINVAL;
+    }
+
     return queue->submit(work);
 }
 
@@ -591,3 +596,4 @@ int work_reschedule(WorkDelayable *dwork, std::chrono::milliseconds delay) {
 }
 #endif // DELAYABLE_WORK
 #endif // SYS_WORK_QUEUE
+} // namespace ares

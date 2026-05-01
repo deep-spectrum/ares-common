@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef VERSION_LOGGER_HPP
-#define VERSION_LOGGER_HPP
+#ifndef ARES_COMMON_LOGGER_HPP
+#define ARES_COMMON_LOGGER_HPP
 
 #include <cstdint>
 #include <vector>
@@ -41,25 +41,25 @@ class Logger {
     };
 
     /**
-     * .
+     * Constructor.
      * @param[in] name The name of the logger.
      * @param[in] level The starting logging level.
      */
     explicit Logger(const char *name, LogLevel level);
 
     /**
-     * .
+     * Destructor.
      */
     ~Logger() = default;
 
     /**
-     * .
+     * Sets the current logging level.
      * @param[in] level The new logging level.
      */
     void set_log_level(LogLevel level);
 
     /**
-     * .
+     * Retrieve the current logging level.
      * @return The current logging level.
      */
     [[nodiscard]] LogLevel get_log_level() const;
@@ -77,6 +77,18 @@ class Logger {
      */
     void log(LogLevel level, const char *fmt, ...) const;
 
+    /**
+     * @brief Log a message with the given level.
+     *
+     * Logs the given message with the given level. If the loggers level is set
+     * higher than the given level, then the message will not be logged.
+     *
+     * @param[in] level The logging message type. Will do nothing if set to
+     * `LOG_LEVEL_OFF`
+     * @param[in] msg Persistent, raw string. Will be displayed for each dump.
+     * @param[in] buf The data to be logged.
+     * @param[in] bytes Length of the data to be logged (in bytes).
+     */
     void log_hexdump(LogLevel level, const char *msg,
                      const std::vector<uint8_t> &buf, std::size_t bytes);
 
@@ -95,4 +107,4 @@ class Logger {
 #endif // defined(USE_PYTHON_LOGGERS)
 };
 
-#endif // VERSION_LOGGER_HPP
+#endif // ARES_COMMON_LOGGER_HPP
