@@ -203,8 +203,8 @@ class WorkQ {
 
     // protected with spinlock
     sys_slist_t pending{};
-    ares::bounded_queue<uint8_t, 1, true> notifyq;
-    ares::bounded_queue<uint8_t, 1, true> drainq;
+    bounded_queue<uint8_t, 1, true> notifyq;
+    bounded_queue<uint8_t, 1, true> drainq;
     uint32_t flags = 0;
 
     static int submit_locked(Work *work, WorkQ **queue);
