@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef ARES_WORK_Q_HPP
-#define ARES_WORK_Q_HPP
+#ifndef ARES_COMMON_WORK_Q_HPP
+#define ARES_COMMON_WORK_Q_HPP
 
 #include "task.hpp"
 #include <ares/data-structures/queue.hpp>
@@ -19,6 +19,7 @@
 #include <functional>
 #include <thread>
 
+namespace ares {
 using namespace std::chrono_literals;
 
 class WorkQ;
@@ -27,18 +28,97 @@ struct WorkFlusher;
 struct WorkCanceller;
 struct WorkDelayable;
 
+/**
+ * The signature for a work item handler function.
+ */
 using work_handler_t = std::function<void(Work *)>;
 
+/**
+ * @class Work
+ * Class used to submit work.
+ */
 struct Work {
+    /**
+     * Constructor.
+     * @param handler The work handler.
+     */
     explicit Work(work_handler_t handler);
     Work() = delete;
     friend class WorkQ;
     friend struct WorkDelayable;
 
+    /**
+     * @brief Busy state flags from the work item.
+     *
+     * A zero return value indicates the work item appears to be idle.
+     *
+     * @return A nonzero value if the work item is busy.
+     * @return 0 if the work item appears to be idle.
+     *
+     * @note This is a live snapshot of state, which may change before the
+     * result is checked. Use locks where appropriate.
+     */
     [[nodiscard]] int work_busy_get() const;
+
+    /**
+     * @brief Test whether a work item is currently pending.
+     *
+     * Wrapper to determine whether a work item is in a non-idle state.
+     *
+     * @return `true` if Work::work_busy_get() returns a non-zero value.
+     *
+     * @note This is a live snapshot of state, which may change before the
+     * result is checked. Use locks where appropriate.
+     */
     [[nodiscard]] bool work_is_pending() const;
+
+    /**
+     * @brief Wait for last-submitted instance to complete.
+     *
+     * Resubmissions may occur while waiting, including chained submissions
+     * (from within the handler).
+     *
+     * @return `true` if call had to wait for completion.
+     * @return `false` if work was already idle.
+     *
+     * @warning Behavior is undefined if this function is invoked on work from a
+     * `work` queue running `work`.
+     */
     bool work_flush();
+
+    /**
+     * @brief Cancel a work item.
+     *
+     * This attempts to prevent a pending (non-delayable) work item from being
+     * processed by removing it from the work queue. If the item is being
+     * processed, the work item will continue to be processed, but resubmissions
+     * are rejected until cancellation completes.
+     *
+     * If this returns zero cancellation is complete, otherwise something
+     * (probably a work queue thread) is still referencing the item.
+     *
+     * See also Work::work_cancel_sync().
+     *
+     * @return the Work::work_busy_get() status indicating the state of the item
+     * after all cancellation steps performed by this call are completed.
+     */
     int work_cancel();
+
+    /**
+     * @brief Cancel a work item and wait for it to complete.
+     *
+     * Same as Work::work_cancel() but does not return until cancellation is
+     * complete. This can be invoked by a thread after Work::work_cancel to
+     * synchronize with a previous cancellation.
+     *
+     * @return `true` if work was pending (call had to wait for cancellation of
+     * a running handler to complete, or scheduled or submitted operations were
+     * canceled).
+     * @return `false` otherwise.
+     *
+     * @warning Behavior is undefined if this function is invoked on work from a
+     * `work` queue running `work`.
+     */
     bool work_cancel_sync();
 
   private:
@@ -160,5 +240,6 @@ int work_reschedule_for_queue(WorkQ *queue, WorkDelayable *dwork,
                               std::chrono::milliseconds delay);
 WorkDelayable *work_delayable_from_work(Work *work);
 #endif // DELAYABLE_WORK
+} // namespace ares
 
-#endif // ARES_WORK_Q_HPP
+#endif // ARES_COMMON_WORK_Q_HPP
