@@ -41,25 +41,25 @@ class Logger {
     };
 
     /**
-     * .
+     * Constructor.
      * @param[in] name The name of the logger.
      * @param[in] level The starting logging level.
      */
     explicit Logger(const char *name, LogLevel level);
 
     /**
-     * .
+     * Destructor.
      */
     ~Logger() = default;
 
     /**
-     * .
+     * Sets the current logging level.
      * @param[in] level The new logging level.
      */
     void set_log_level(LogLevel level);
 
     /**
-     * .
+     * Retrieve the current logging level.
      * @return The current logging level.
      */
     [[nodiscard]] LogLevel get_log_level() const;
