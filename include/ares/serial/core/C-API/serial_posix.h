@@ -57,7 +57,7 @@ int open_port(const char *port);
 int configure_port(struct SerialPosixConfig *config);
 
 /**
- * @Brief Reads data from a serial port with a timeout.
+ * @brief Reads data from a serial port with a timeout.
  * @param[in] fd The file descriptor of the serial port.
  * @param[in,out] buf The buffer to store the read data.
  * @param[in] nbytes The number of bytes to read.

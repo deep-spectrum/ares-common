@@ -129,7 +129,7 @@ extern "C" {
  * processing `__VA_ARGS__` to avoid processing empty arguments.
  *
  * Example:
- *
+ * ```c
  *	#define EMPTY
  *	#define NON_EMPTY	1
  *	#undef  UNDEFINED
@@ -139,6 +139,7 @@ extern "C" {
  *	#if defined(EMPTY) && IS_EMPTY(EMPTY) == true
  *	some_conditional_code
  *	#endif
+ *	```
  *
  * In above examples, the invocations of IS_EMPTY(...) return @p true,
  * @p false, and @p true; @p some_conditional_code is included.
