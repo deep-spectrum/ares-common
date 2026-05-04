@@ -11,16 +11,11 @@
 #include <ares/pyutil.hpp>
 #include <array>
 #include <cstdlib>
-#include <exception>
-#include <pybind11/pybind11.h>
+#include <test_array_to_tuple.hpp>
 #include <vector>
 
-namespace py = pybind11;
-
-#define C_STYLE_ARRAY_SIZE 10
-
 template <typename T>
-static void init_array(T *arr, size_t count, int start_value) {
+static void init_array(T &arr, size_t count, int start_value) {
     int value = start_value;
 
     for (size_t i = 0u; i < count; i++, value++) {
@@ -58,4 +53,16 @@ py::tuple test_dynamic_CPP_array(int start_value, int count) {
     delete[] arr;
 
     return ret;
+}
+
+py::tuple test_cpp_array(int start_value) {
+    std::array<int, CPP_STDLIB_ARRAY_SIZE> arr;
+    init_array(arr, CPP_STDLIB_ARRAY_SIZE, start_value);
+    return ares::array_to_tuple(&arr, CPP_STDLIB_ARRAY_SIZE);
+}
+
+py::tuple test_cpp_vector(int start_value, int count) {
+    std::vector<int> arr(count);
+    init_array(arr, count, start_value);
+    return ares::array_to_tuple(&arr, arr.size());
 }
