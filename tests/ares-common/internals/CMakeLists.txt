@@ -15,7 +15,7 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-include_directories(../../include/common)
+include_directories(../../../include/common)
 
 add_executable(
         macro_test

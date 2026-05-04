@@ -1,3 +1,5 @@
 .idea/
 docs/doxy-docs/
 .venv/
+cmake-build*
+build*
