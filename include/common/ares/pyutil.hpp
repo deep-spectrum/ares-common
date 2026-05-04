@@ -17,6 +17,7 @@
 
 namespace py = pybind11;
 
+namespace ares {
 /**
  * @struct StructParam
  * @tparam T The type of the value
@@ -236,5 +237,6 @@ static py::tuple array_to_tuple(const T *data, size_t count) {
     }
     return t;
 }
+} // namespace ares
 
 #endif // ARES_PYUTIL_HPP

@@ -14,7 +14,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(pybind11)
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
-list(APPEND "${CMAKE_CURRENT_SOURCE_DIR}../../../cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake")
+
+include (AddPythonModule)
+
+include_directories(include ../../../include/common)
 
 set(PACKAGE_NAME pyutils_test_core)
 python_package(src/${PACKAGE_NAME} DESTINATION ${PACKAGE_NAME})
@@ -22,4 +26,5 @@ python_module(_pyutils_test
         src/pyutils_test/test_array_to_tuple.cpp
         src/pyutils_test/test_from_kwargs.cpp
         src/pyutils_test/test_to_dict.cpp
+        src/pyutils_test/bindings.cpp
         DESTINATION ${PACKAGE_NAME})
