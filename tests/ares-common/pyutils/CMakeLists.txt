@@ -9,10 +9,9 @@ include(FetchContent)
 FetchContent_Declare(
         pybind11
         GIT_REPOSITORY https://github.com/pybind/pybind11.git
-        GIT_BRANCH stable
+        GIT_TAG stable
 )
 FetchContent_MakeAvailable(pybind11)
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake")
 

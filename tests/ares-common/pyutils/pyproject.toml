@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "ares-pyutils-tests"
-version = "dev"
+version = "0.0.0"
 description = "Tests for Ares Common PyUtils module"
 authors = [
     { name = "Tom Schmitz", email = "tschmitz@andrew.cmu.edu" },
@@ -14,4 +14,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "pytest"
 ]
