@@ -23,5 +23,12 @@ add_executable(
 )
 target_link_libraries(macro_test GTest::gtest_main)
 
+add_executable(
+        utils_test
+        src/util_test.cpp
+)
+target_link_libraries(utils_test GTest::gmock_main)
+
 include(GoogleTest)
 gtest_discover_tests(macro_test)
+gtest_discover_tests(utils_test)

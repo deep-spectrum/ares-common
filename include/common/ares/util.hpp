@@ -11,6 +11,7 @@
 #ifndef ARES_UTIL_HPP
 #define ARES_UTIL_HPP
 
+namespace ares {
 /**
  * Get a pointer to a structure containing the element.
  *
@@ -39,5 +40,6 @@ Parent *container_of(Member *ptr, Member Parent::*member_ptr) {
         &(static_cast<Parent *>(nullptr)->*member_ptr));
     return reinterpret_cast<Parent *>(reinterpret_cast<char *>(ptr) - offset);
 }
+} // namespace ares
 
 #endif // ARES_UTIL_HPP
