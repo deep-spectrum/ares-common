@@ -31,8 +31,8 @@ extern "C" {
 /**
  * @brief Stringifies the macro input.
  *
- * Calls stringify on a macro. This is useful where the macro name needs to be
- * stringified, but not what it expands to.
+ * Calls stringify on a macro. This is useful where the macro value needs to be
+ * stringified.
  *
  * @param x The macro to stringify.
  */
