@@ -196,10 +196,10 @@ py::dict to_dict(Args &&...args) {
  * @cond doxygen_suppress
  */
 #define Z_NV(field_, check_)                                                   \
-    NamedValue<decltype(field_)> { #field_, field_, check_ }
+    ares::NamedValue<decltype(field_)> { #field_, field_, check_ }
 
 #define Z_NV_CONTAINER(field_, container_, check_)                             \
-    NamedValue<decltype((container_).field_)> {                                \
+    ares::NamedValue<decltype((container_).field_)> {                          \
 #field_, (container_).field_, check_                                   \
     }
 /**
