@@ -96,3 +96,34 @@ def test_kwargs_named():
     assert test.i == KWARGS_DEFAULT_I
     assert test.s == KWARGS_DEFAULT_S
     assert test.c == KWARGS_DEFAULT_C
+
+
+def test_kwargs_containers():
+    other = random.randint(-65535, 65535)
+    foo_l = random.randint(-65535, 65535)
+    bar_s = gen_random_str()
+    value = random.randint(-65535, 65535)
+
+    test = KwArgsTest(
+        other=other,
+        foo_l=foo_l,
+        bar_s=bar_s,
+        value=value,
+    )
+
+    assert test.other == other
+    assert test.foo_l == foo_l
+    assert test.bar_s == bar_s
+    assert test.foobar_value == value
+
+    assert test.foobar_s == KWARGS_DEFAULT_BAR_S
+    assert test.foo_s == KWARGS_DEFAULT_FOO_S
+    assert test.bar_value == KWARGS_DEFAULT_BAR_VALUE
+    assert test.bar_other == KWARGS_DEFAULT_BAR_OTHER
+    assert test.d == KWARGS_DEFAULT_D
+    assert test.str == KWARGS_DEFAULT_STR
+    assert test.l == KWARGS_DEFAULT_L
+    assert test.i == KWARGS_DEFAULT_I
+    assert test.initial_i == KWARGS_DEFAULT_INITIAL_I
+    assert test.s == KWARGS_DEFAULT_S
+    assert test.c == KWARGS_DEFAULT_C
