@@ -24,6 +24,9 @@ PYBIND11_MODULE(_pyutils_test, m, py::mod_gil_not_used()) {
     m.def("cpp_array", &test_cpp_array, py::arg("start_value"));
     m.def("cpp_vector", &test_cpp_vector, py::arg("start_value"),
           py::arg("count"));
+    m.def("tuple_single_value", &test_single_value, py::arg("start_value"));
+    m.def("tuple_no_value", &test_no_values);
+    ;
 
     m.attr("C_ARRAY_SIZE") = C_STYLE_ARRAY_SIZE;
     m.attr("CPP_ARRAY_SIZE") = CPP_STDLIB_ARRAY_SIZE;

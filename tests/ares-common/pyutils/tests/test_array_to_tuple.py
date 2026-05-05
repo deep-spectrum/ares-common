@@ -1,5 +1,5 @@
 from pyutils_test_core import static_c_array_tuple, dynamic_c_array_tuple, dynamic_cpp_array_tuple, cpp_array, \
-    cpp_vector, C_ARRAY_SIZE, CPP_ARRAY_SIZE
+    cpp_vector, C_ARRAY_SIZE, CPP_ARRAY_SIZE, tuple_single_value, tuple_no_value
 import random
 import pytest
 
@@ -45,3 +45,13 @@ def test_cpp_vector(execution_number):
     expected = tuple([int(x) for x in range(start, start + size, 1)])
     result = cpp_vector(start, size)
     assert expected == result
+
+def test_single_value():
+    start = random.randint(-100, 100)
+    val = tuple_single_value(start)
+    assert tuple([start]) == val
+
+
+def test_empty():
+    val = tuple_no_value()
+    assert not val

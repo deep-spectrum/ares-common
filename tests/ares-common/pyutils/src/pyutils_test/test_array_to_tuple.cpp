@@ -14,8 +14,6 @@
 #include <test_array_to_tuple.hpp>
 #include <vector>
 
-typedef int test_type_t;
-
 template <typename T>
 static void init_array(T &arr, size_t count, test_type_t start_value) {
     int value = start_value;
@@ -67,4 +65,14 @@ py::tuple test_cpp_vector(test_type_t start_value, int count) {
     std::vector<test_type_t> arr(count);
     init_array(arr, count, start_value);
     return ares::array_to_tuple(arr.data(), arr.size());
+}
+
+py::tuple test_single_value(test_type_t start_value) {
+    test_type_t value = start_value;
+    return ares::array_to_tuple(&value, 1);
+}
+
+py::tuple test_no_values() {
+    test_type_t *val = nullptr;
+    return ares::array_to_tuple(val, 0);
 }

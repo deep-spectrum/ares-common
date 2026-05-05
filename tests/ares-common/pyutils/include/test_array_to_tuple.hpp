@@ -18,10 +18,14 @@ namespace py = pybind11;
 #define C_STYLE_ARRAY_SIZE    10
 #define CPP_STDLIB_ARRAY_SIZE 10
 
-py::tuple test_static_C_style_array(int start_value);
-py::tuple test_dynamic_C_array(int start_value, int count);
-py::tuple test_dynamic_CPP_array(int start_value, int count);
-py::tuple test_cpp_array(int start_value);
-py::tuple test_cpp_vector(int start_value, int count);
+typedef int test_type_t;
+
+py::tuple test_static_C_style_array(test_type_t start_value);
+py::tuple test_dynamic_C_array(test_type_t start_value, int count);
+py::tuple test_dynamic_CPP_array(test_type_t start_value, int count);
+py::tuple test_cpp_array(test_type_t start_value);
+py::tuple test_cpp_vector(test_type_t start_value, int count);
+py::tuple test_single_value(test_type_t start_value);
+py::tuple test_no_values();
 
 #endif // ARES_TEST_ARRAY_TO_TUPLE_HPP
