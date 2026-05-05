@@ -89,6 +89,15 @@ void from_kwargs(const py::kwargs &kwargs, Args &&...args) {
     COND_CODE_0(IS_EMPTY(container_), (Z_SP_CONTAINER(field_, container_)),    \
                 (Z_SP(field_)))
 
+/**
+ * @brief Wraps a field into a StructParam struct with a custom name.
+ *
+ * Used in place of SP() if the python side name is different from the struct
+ * parameter name.
+ *
+ * @param name_ The kwarg key to check for.
+ * @param container_ The struct parameter to store the result in.
+ */
 #define SP_NAMED(name_, container_)                                            \
     ares::StructParam<decltype(container_)> { #name_, &(container_) }
 
