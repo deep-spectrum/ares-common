@@ -8,10 +8,11 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
+#define PYBIND11_DETAILED_ERROR_MESSAGES
+
 #include <pybind11/pybind11.h>
 #include <test_array_to_tuple.hpp>
-
-#include "test_from_kwargs.hpp"
+#include <test_from_kwargs.hpp>
 
 namespace py = pybind11;
 

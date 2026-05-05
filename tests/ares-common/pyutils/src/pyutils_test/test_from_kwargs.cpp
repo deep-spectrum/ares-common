@@ -54,4 +54,4 @@ int KwArgsTestStruct::get_initial_i() const { return i0; }
 
 short KwArgsTestStruct::get_s() const { return s; }
 
-char KwArgsTestStruct::get_c() const { return c; }
+int8_t KwArgsTestStruct::get_c() const { return c; }

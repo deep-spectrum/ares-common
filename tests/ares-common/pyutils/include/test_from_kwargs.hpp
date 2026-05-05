@@ -29,7 +29,7 @@ constexpr long default_l = 700;
 constexpr int default_i = 900;
 constexpr int default_initial_i = 0;
 constexpr short default_s = 5;
-constexpr char default_c = -127;
+constexpr int8_t default_c = -127;
 
 struct Bar {
     std::string bar_s = default_bar_s;
@@ -52,7 +52,7 @@ struct KwArgsTestStruct {
     int i = default_i;
     int i0 = default_initial_i;
     short s = default_s;
-    char c = default_c;
+    int8_t c = default_c;
 
     explicit KwArgsTestStruct(const py::kwargs &kwargs);
 
@@ -73,7 +73,7 @@ struct KwArgsTestStruct {
     int get_i() const;           /// i
     int get_initial_i() const;   /// i0 (i_initial [named])
     short get_s() const;         /// s
-    char get_c() const;          /// c
+    int8_t get_c() const;          /// c
 };
 
 #endif // ARES_TEST_FROM_KWARGS_HPP
