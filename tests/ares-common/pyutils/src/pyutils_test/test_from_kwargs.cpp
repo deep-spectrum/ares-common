@@ -17,9 +17,9 @@ KwArgsTestStruct::KwArgsTestStruct(const py::kwargs &kwargs) {
                       SP(d), SP(str), SP(l), SP(i), SP(s), SP(c),
 
                       // Named types
-                      SP_NAMED(i_initial, i0), SP_NAMED(bar_value, b.value),
+                      SP_NAMED(initial_i, i0), SP_NAMED(bar_value, b.value),
                       SP_NAMED(foo_s, f.s), SP_NAMED(foobar_s, f.b.bar_s),
-                      SP_NAMED(other, b.other),
+                      SP_NAMED(bar_other, b.other),
 
                       // Containers
                       SP(other, f.b), SP(foo_l, f), SP(bar_s, b),

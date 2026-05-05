@@ -73,7 +73,7 @@ struct KwArgsTestStruct {
     int get_i() const;           /// i
     int get_initial_i() const;   /// i0 (i_initial [named])
     short get_s() const;         /// s
-    int8_t get_c() const;          /// c
+    int8_t get_c() const;        /// c
 };
 
 #endif // ARES_TEST_FROM_KWARGS_HPP

@@ -6,6 +6,11 @@ import string
 import pytest
 
 
+def gen_random_str(max_len: int = 512):
+    str_len = random.randint(1, max_len)
+    return ''.join(random.choices(string.printable, k=str_len))
+
+
 def test_no_kwargs():
     s = KwArgsTest()
     assert s.foobar_s == KWARGS_DEFAULT_BAR_S
@@ -27,8 +32,7 @@ def test_no_kwargs():
 
 def test_kwargs_basic():
     d = random.uniform(-100.0, 100.0)
-    str_len = random.randint(1, 512)
-    str_ = ''.join(random.choices(string.printable, k=str_len))
+    str_ = gen_random_str()
     l = random.randint(-65535, 65535)
     i = random.randint(-1024, 1024)
     s = random.randint(-512, 512)
@@ -59,3 +63,36 @@ def test_kwargs_basic():
     assert test.bar_value == KWARGS_DEFAULT_BAR_VALUE
     assert test.bar_other == KWARGS_DEFAULT_BAR_OTHER
     assert test.initial_i == KWARGS_DEFAULT_INITIAL_I
+
+
+def test_kwargs_named():
+    initial_i = random.randint(-65535, 65535)
+    bar_value = random.randint(-65535, 65535)
+    foo_s = gen_random_str()
+    foobar_s = gen_random_str()
+    bar_other = random.randint(-65535, 65535)
+
+    test = KwArgsTest(
+        initial_i=initial_i,
+        bar_value=bar_value,
+        foo_s=foo_s,
+        foobar_s=foobar_s,
+        bar_other=bar_other,
+    )
+
+    assert test.initial_i == initial_i
+    assert test.bar_value == bar_value
+    assert test.foo_s == foo_s
+    assert test.foobar_s == foobar_s
+    assert test.bar_other == bar_other
+
+    assert test.foobar_value == KWARGS_DEFAULT_BAR_VALUE
+    assert test.foo_l == KWARGS_DEFAULT_FOO_L
+    assert test.bar_s == KWARGS_DEFAULT_BAR_S
+    assert test.other == KWARGS_DEFAULT_BAR_OTHER
+    assert test.d == KWARGS_DEFAULT_D
+    assert test.str == KWARGS_DEFAULT_STR
+    assert test.l == KWARGS_DEFAULT_L
+    assert test.i == KWARGS_DEFAULT_I
+    assert test.s == KWARGS_DEFAULT_S
+    assert test.c == KWARGS_DEFAULT_C
