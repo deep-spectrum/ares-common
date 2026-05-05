@@ -15,6 +15,11 @@
 
 namespace py = pybind11;
 
+constexpr int drop_a_value = 100;
+constexpr int drop_b_value = 200;
+constexpr int drop_c_value = 300;
+constexpr int drop_d_value = 400;
+
 struct FooBar {
     FooBar() = default;
     explicit FooBar(int i) : d(i) {}
