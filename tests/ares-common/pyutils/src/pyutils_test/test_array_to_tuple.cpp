@@ -14,8 +14,10 @@
 #include <test_array_to_tuple.hpp>
 #include <vector>
 
+typedef int test_type_t;
+
 template <typename T>
-static void init_array(T &arr, size_t count, int start_value) {
+static void init_array(T &arr, size_t count, test_type_t start_value) {
     int value = start_value;
 
     for (size_t i = 0u; i < count; i++, value++) {
@@ -23,14 +25,14 @@ static void init_array(T &arr, size_t count, int start_value) {
     }
 }
 
-py::tuple test_static_C_style_array(int start_value) {
-    uint64_t arr[C_STYLE_ARRAY_SIZE];
+py::tuple test_static_C_style_array(test_type_t start_value) {
+    int arr[C_STYLE_ARRAY_SIZE];
     init_array(arr, C_STYLE_ARRAY_SIZE, start_value);
     return ares::array_to_tuple(arr, C_STYLE_ARRAY_SIZE);
 }
 
-py::tuple test_dynamic_C_array(int start_value, int count) {
-    auto arr = static_cast<int *>(calloc(count, sizeof(int)));
+py::tuple test_dynamic_C_array(test_type_t start_value, int count) {
+    auto arr = static_cast<test_type_t *>(calloc(count, sizeof(test_type_t)));
 
     if (arr == nullptr) {
         throw std::bad_alloc();
@@ -38,31 +40,31 @@ py::tuple test_dynamic_C_array(int start_value, int count) {
 
     init_array(arr, count, start_value);
     py::tuple ret = ares::array_to_tuple(arr, count);
-    memset(arr, 0, sizeof(int) * count);
+    memset(arr, 0, sizeof(test_type_t) * count);
     free(arr);
 
     return ret;
 }
 
-py::tuple test_dynamic_CPP_array(int start_value, int count) {
-    auto arr = new int[count];
+py::tuple test_dynamic_CPP_array(test_type_t start_value, int count) {
+    auto arr = new test_type_t[count];
 
     init_array(arr, count, start_value);
     py::tuple ret = ares::array_to_tuple(arr, count);
-    memset(arr, 0, sizeof(int) * count);
+    memset(arr, 0, sizeof(test_type_t) * count);
     delete[] arr;
 
     return ret;
 }
 
-py::tuple test_cpp_array(int start_value) {
-    std::array<int, CPP_STDLIB_ARRAY_SIZE> arr;
+py::tuple test_cpp_array(test_type_t start_value) {
+    std::array<test_type_t, CPP_STDLIB_ARRAY_SIZE> arr;
     init_array(arr, CPP_STDLIB_ARRAY_SIZE, start_value);
-    return ares::array_to_tuple(&arr, CPP_STDLIB_ARRAY_SIZE);
+    return ares::array_to_tuple(arr.data(), arr.size());
 }
 
-py::tuple test_cpp_vector(int start_value, int count) {
-    std::vector<int> arr(count);
+py::tuple test_cpp_vector(test_type_t start_value, int count) {
+    std::vector<test_type_t> arr(count);
     init_array(arr, count, start_value);
-    return ares::array_to_tuple(&arr, arr.size());
+    return ares::array_to_tuple(arr.data(), arr.size());
 }
