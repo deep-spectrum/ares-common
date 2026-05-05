@@ -66,9 +66,11 @@ void from_kwargs(const py::kwargs &kwargs, Args &&...args) {
  * @cond doxygen_suppress
  */
 #define Z_SP(field_)                                                           \
-    StructParam<decltype(field_)> { #field_, &(field_) }
+    ares::StructParam<decltype(field_)> { #field_, &(field_) }
 #define Z_SP_CONTAINER(field_, container_)                                     \
-    StructParam<decltype((container_).field_)> { #field_, &(container_).field_ }
+    ares::StructParam<decltype((container_).field_)> {                         \
+#field_, &(container_).field_                                          \
+    }
 /**
  * @endcond
  */
@@ -86,6 +88,9 @@ void from_kwargs(const py::kwargs &kwargs, Args &&...args) {
 #define SP(field_, container_...)                                              \
     COND_CODE_0(IS_EMPTY(container_), (Z_SP_CONTAINER(field_, container_)),    \
                 (Z_SP(field_)))
+
+#define SP_NAMED(name_, container_)                                            \
+    ares::StructParam<decltype(container_)> { #name_, &(container_) }
 
 /**
  * @struct NamedValue
