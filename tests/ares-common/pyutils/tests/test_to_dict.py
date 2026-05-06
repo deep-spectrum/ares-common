@@ -212,3 +212,66 @@ def test_basic_dict5_individual_drop_value():
     cut = ToDictTest(expected["a"], expected["b"], expected["c"], expected["d"], expected["e"])
     result = cut.basic_dict5()
     assert expected == result
+
+
+def test_conditional_dict0_non_drop_values():
+    sample_pool = [int(x) for x in range(-65535, 65535)]
+    sample_pool.remove(TODICT_COMMON_DROP_VAL)
+    expected = {
+        "a": random.choice(sample_pool),
+        "b": random.choice(sample_pool),
+        "c": random.choice(sample_pool),
+    }
+    cut = ToDictTest(expected["a"], expected["b"], expected["c"], 0, 0)
+    result = cut.conditional_dict0()
+    assert expected == result
+
+
+def test_conditional_dict0_drop_single_values():
+    # Drop a single value. This applies to common drop only
+    sample_pool = [int(x) for x in range(-65535, 65535)]
+    sample_pool.remove(TODICT_COMMON_DROP_VAL)
+    expected = {
+        "a": TODICT_COMMON_DROP_VAL,
+        "b": random.choice(sample_pool),
+        "c": random.choice(sample_pool),
+    }
+    cut = ToDictTest(expected["a"], expected["b"], expected["c"], 0, 0)
+    expected["a"] = None
+    result = cut.conditional_dict0()
+    assert expected == result
+
+    expected = {
+        "a": random.choice(sample_pool),
+        "b": TODICT_COMMON_DROP_VAL,
+        "c": random.choice(sample_pool),
+    }
+    cut = ToDictTest(expected["a"], expected["b"], expected["c"], 0, 0)
+    expected["b"] = None
+    result = cut.conditional_dict0()
+    assert expected == result
+
+    expected = {
+        "a": random.choice(sample_pool),
+        "b": random.choice(sample_pool),
+        "c": TODICT_COMMON_DROP_VAL,
+    }
+    cut = ToDictTest(expected["a"], expected["b"], expected["c"], 0, 0)
+    expected["c"] = None
+    result = cut.conditional_dict0()
+    assert expected == result
+
+
+def test_conditional_dict0_drop_all_values():
+    # Drop all values. This applies to common drop only
+    expected = {
+        "a": TODICT_COMMON_DROP_VAL,
+        "b": TODICT_COMMON_DROP_VAL,
+        "c": TODICT_COMMON_DROP_VAL,
+    }
+    cut = ToDictTest(expected["a"], expected["b"], expected["c"], 0, 0)
+    expected["a"] = None
+    expected["b"] = None
+    expected["c"] = None
+    result = cut.conditional_dict0()
+    assert expected == result
