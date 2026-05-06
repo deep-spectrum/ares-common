@@ -32,9 +32,16 @@ add_executable(
 )
 target_link_libraries(slist_test GTest::gtest_main)
 
+add_executable(
+        queue_test
+        src/queue_tests.cpp
+)
+target_link_libraries(queue_test GTest::gtest_main)
+
 ################################################
 # Discover tests here
 ################################################
 
 include(GoogleTest)
 gtest_discover_tests(slist_test)
+gtest_discover_tests(queue_test)
