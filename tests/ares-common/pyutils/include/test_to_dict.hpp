@@ -15,6 +15,7 @@
 
 namespace py = pybind11;
 
+constexpr int common_drop_value = 50;
 constexpr int drop_a_value = 100;
 constexpr int drop_b_value = 200;
 constexpr int drop_c_value = 300;
@@ -44,9 +45,17 @@ struct ToDictTest {
     // named value
     py::dict basic_dict3(); // field and container the same
     py::dict basic_dict4(); // field and container different
-    py::dict basic_dict5(); // combine 0 and 1
+    py::dict basic_dict5(); // combine 3 and 4
 
-    py::dict conditional_dict0();
+    // Pure named value with checks
+    py::dict conditional_dict0(); // field and container the same
+    py::dict conditional_dict1(); // field and container different
+    py::dict conditional_dict2(); // combine 0 and 1
+
+    // Mix checks and no checks
+    py::dict conditional_dict3(); // field and container the same
+    py::dict conditional_dict4(); // field and container different
+    py::dict conditional_dict5(); // combine 3 and 4
 };
 
 #endif // ARES_TEST_TO_DICT_HPP

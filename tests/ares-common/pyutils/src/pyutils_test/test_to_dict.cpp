@@ -32,3 +32,18 @@ py::dict ToDictTest::basic_dict4() { return ares::to_dict(NV(d, fb)); }
 py::dict ToDictTest::basic_dict5() {
     return ares::to_dict(NV(a), NV(b), NV(c), NV(d, fb));
 }
+
+py::dict ToDictTest::conditional_dict0() {
+    return ares::to_dict([](auto v) { return common_drop_value == v; },
+                         py::none(), NV(a), NV(b), NV(c));
+}
+
+py::dict ToDictTest::conditional_dict1() {
+    return ares::to_dict([](auto v) { return common_drop_value == v; },
+                         py::none(), NV(d, fb));
+}
+
+py::dict ToDictTest::conditional_dict2() {
+    return ares::to_dict([](auto v) { return common_drop_value == v; },
+                         py::none(), NV(a), NV(b), NV(c), NV(d, fb));
+}
