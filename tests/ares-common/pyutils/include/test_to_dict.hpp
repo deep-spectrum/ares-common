@@ -20,17 +20,19 @@ constexpr int drop_a_value = 100;
 constexpr int drop_b_value = 200;
 constexpr int drop_c_value = 300;
 constexpr int drop_d_value = 400;
+constexpr int drop_e_value = 500;
 
 struct FooBar {
     FooBar() = default;
-    explicit FooBar(int i) : d(i) {}
+    explicit FooBar(int i0, int i1) : d(i0), e(i1) {}
     int d = 4;
+    int e = 5;
 };
 
 struct ToDictTest {
     ToDictTest() = default;
-    explicit ToDictTest(int i0, int i1, int i2, int i3)
-        : a(i0), b(i1), c(i2), fb(i3) {}
+    explicit ToDictTest(int i0, int i1, int i2, int i3, int i4)
+        : a(i0), b(i1), c(i2), fb(i3, i4) {}
 
     int a = 0;
     int b = 1;
