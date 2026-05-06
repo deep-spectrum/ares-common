@@ -46,6 +46,7 @@ def test_cpp_vector(execution_number):
     result = cpp_vector(start, size)
     assert expected == result
 
+
 def test_single_value():
     start = random.randint(-100, 100)
     val = tuple_single_value(start)

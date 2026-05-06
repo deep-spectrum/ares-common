@@ -14,6 +14,7 @@ def test_basic_dict0_random_values():
     result = cut.basic_dict0()
     assert expected == result
 
+
 def test_basic_dict0_common_drop_value():
     # Test that no common drop checks are taking place
     expected = {
@@ -46,6 +47,7 @@ def test_basic_dict1_random_values():
     cut = ToDictTest(0, 0, 0, expected["d"], expected["e"])
     result = cut.basic_dict1()
     assert expected == result
+
 
 def test_basic_dict1_common_drop_value():
     # Test that no common drop checks are taking place
@@ -80,6 +82,7 @@ def test_basic_dict2_random_values():
     cut = ToDictTest(expected["a"], expected["b"], expected["c"], expected["d"], expected["e"])
     result = cut.basic_dict2()
     assert expected == result
+
 
 def test_basic_dict2_common_drop_value():
     # Test that no common drop checks are taking place
@@ -119,6 +122,7 @@ def test_basic_dict3_random_values():
     result = cut.basic_dict3()
     assert expected == result
 
+
 def test_basic_dict3_common_drop_value():
     # Test that no common drop checks are taking place
     expected = {
@@ -151,6 +155,7 @@ def test_basic_dict4_random_values():
     cut = ToDictTest(0, 0, 0, expected["d"], expected["e"])
     result = cut.basic_dict4()
     assert expected == result
+
 
 def test_basic_dict4_common_drop_value():
     # Test that no common drop checks are taking place
@@ -185,6 +190,7 @@ def test_basic_dict5_random_values():
     cut = ToDictTest(expected["a"], expected["b"], expected["c"], expected["d"], expected["e"])
     result = cut.basic_dict5()
     assert expected == result
+
 
 def test_basic_dict5_common_drop_value():
     # Test that no common drop checks are taking place
