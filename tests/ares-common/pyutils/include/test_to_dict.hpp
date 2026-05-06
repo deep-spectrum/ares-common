@@ -58,6 +58,14 @@ struct ToDictTest {
     py::dict conditional_dict3(); // field and container the same
     py::dict conditional_dict4(); // field and container different
     py::dict conditional_dict5(); // combine 3 and 4
+
+    /**
+     * @todo: The things below have not been implemented yet
+     * - Custom names
+     * - Custom Predicates
+     * - Custom defaults (needs flag to indicate if default should be used or
+     * not)
+     */
 };
 
 #endif // ARES_TEST_TO_DICT_HPP
