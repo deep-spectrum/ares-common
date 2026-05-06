@@ -105,3 +105,63 @@ TEST(queue_api, queue_empty_get) {
     t1.join();
     t2.join();
 }
+
+#include <iostream>
+
+static void thread_put(ares::queue<int> &cut, size_t num_items, bool &timed_out, const std::chrono::milliseconds &max_execution_time) {
+    int val = 0;
+    timed_out = false;
+
+    auto now = std::chrono::steady_clock::now;
+
+    auto start = now();
+    for (size_t i = 0u; i < num_items && !timed_out; i++) {
+        cut.put(val);
+        timed_out = (now() - start) > max_execution_time;
+    }
+}
+
+static void thread_get(ares::queue<int> &cut, size_t &num_received, const std::chrono::milliseconds &timeout) {
+    num_received = 0;
+
+    auto now = std::chrono::steady_clock::now;
+
+    auto start = now();
+    while ((now() - start) < timeout) {
+        try {
+            cut.get(1ms);
+            num_received++;
+        } catch (...) {
+            // nop
+        }
+
+    }
+}
+
+TEST(queue_api, queue_thread2thread) {
+    ares::queue<int> cut;
+    size_t num_received;
+    size_t expected_num_received = 10;
+    bool timed_out;
+
+    std::thread t1(thread_get, std::ref(cut), std::ref(num_received), 1ms);
+    std::thread t2(thread_put, std::ref(cut), expected_num_received, std::ref(timed_out), 500ms);
+
+    t1.join();
+    t2.join();
+
+    ASSERT_FALSE(timed_out);
+    ASSERT_EQ(num_received, expected_num_received);
+}
+
+TEST(queue_api, queue_get_2threads) {
+    // spawn 2 threads, both getting while the parent puts
+}
+
+TEST(queue_api, queue_put2threads) {
+    // spawn 2 threads, both putting while the parent gets
+}
+
+TEST(queue_api, queue_multithread_competition) {
+    // spawn 3 threads, 1 high prio, 1 med prio, 1 low prio. parent puts while the 3 receive.
+}
