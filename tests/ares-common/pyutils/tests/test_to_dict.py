@@ -439,3 +439,51 @@ def test_conditional_dict3_drop_all_values():
     expected["b"] = None
     result = cut.conditional_dict3()
     assert expected == result
+
+
+def test_conditional_dict4_non_drop_values():
+    sample_pool = [int(x) for x in range(-65535, 65535)]
+    sample_pool.remove(TODICT_COMMON_DROP_VAL)
+    expected = {
+        "d": random.choice(sample_pool),
+        "e": random.choice(sample_pool),
+    }
+    cut = ToDictTest(0, 0, 0, expected["d"], expected["e"])
+    result = cut.conditional_dict4()
+    assert expected == result
+
+
+def test_conditional_dict4_drop_single_values():
+    # Drop a single value. This applies to common drop only
+    sample_pool = [int(x) for x in range(-65535, 65535)]
+    sample_pool.remove(TODICT_COMMON_DROP_VAL)
+    expected = {
+        "d": TODICT_COMMON_DROP_VAL,
+        "e": random.choice(sample_pool),
+    }
+
+    cut = ToDictTest(0, 0, 0, expected["d"], expected["e"])
+    expected["d"] = None
+    result = cut.conditional_dict4()
+    assert expected == result
+
+    expected = {
+        "e": TODICT_COMMON_DROP_VAL,
+        "d": random.choice(sample_pool),
+    }
+
+    cut = ToDictTest(0, 0, 0, expected["d"], expected["e"])
+    result = cut.conditional_dict4()
+    assert expected == result
+
+
+def test_conditional_dict4_drop_all_values():
+    # Drop all values. This applies to common drop only
+    expected = {
+        "d": TODICT_COMMON_DROP_VAL,
+        "e": TODICT_COMMON_DROP_VAL,
+    }
+    cut = ToDictTest(0, 0, 0, expected["d"], expected["e"])
+    expected["d"] = None
+    result = cut.conditional_dict4()
+    assert expected == result
