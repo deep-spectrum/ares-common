@@ -11,6 +11,8 @@
 #ifndef ARES_UTIL_HPP
 #define ARES_UTIL_HPP
 
+#include <cstddef>
+
 namespace ares {
 /**
  * Get a pointer to a structure containing the element.
