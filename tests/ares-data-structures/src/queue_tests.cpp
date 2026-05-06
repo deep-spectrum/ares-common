@@ -9,10 +9,13 @@
  */
 
 #include <ares/data-structures/queue.hpp>
+#include <chrono>
 #include <gtest/gtest.h>
 #include <thread>
 
-TEST(queue, queue_basic_functionality) {
+using namespace std::chrono_literals;
+
+TEST(queue_api, queue_basic_functionality) {
     ares::queue<int> cut;
 
     int data[] = {
@@ -68,4 +71,37 @@ TEST(queue, queue_basic_functionality) {
     ASSERT_NO_THROW(val = cut.get_nonblocking());
     ASSERT_EQ(cut.size(), 0);
     ASSERT_EQ(val, data[2]);
+}
+
+static void release_queue_wait(ares::queue<int> &cut, bool &released_var,
+                               std::chrono::milliseconds timeout) {
+    released_var = false;
+    std::this_thread::sleep_for(timeout);
+    released_var = true;
+    cut.put(0);
+}
+
+TEST(queue_api, queue_empty_get) {
+    ares::queue<int> cut;
+    bool released = false;
+
+    // check if exception is thrown
+    ASSERT_THROW(cut.get(100ms), ares::queue_exception);
+    ASSERT_THROW(cut.get_nonblocking(), ares::queue_exception);
+
+    // check if blocking get stalls indefinitely
+    std::thread t1(release_queue_wait, std::ref(cut), std::ref(released),
+                   500ms);
+
+    cut.get();
+    ASSERT_TRUE(released);
+
+    // check if timeout get gets released after a while
+    std::thread t2(release_queue_wait, std::ref(cut), std::ref(released),
+                   100ms);
+
+    ASSERT_NO_THROW(cut.get(1s));
+
+    t1.join();
+    t2.join();
 }
