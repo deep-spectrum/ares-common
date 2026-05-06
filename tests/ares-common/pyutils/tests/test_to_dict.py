@@ -378,3 +378,64 @@ def test_conditional_dict2_drop_all_values():
     expected["e"] = None
     result = cut.conditional_dict2()
     assert expected == result
+
+
+def test_conditional_dict3_non_drop_values():
+    sample_pool = [int(x) for x in range(-65535, 65535)]
+    sample_pool.remove(TODICT_COMMON_DROP_VAL)
+    expected = {
+        "a": random.choice(sample_pool),
+        "b": random.choice(sample_pool),
+        "c": random.choice(sample_pool),
+    }
+    cut = ToDictTest(expected["a"], expected["b"], expected["c"], 0, 0)
+    result = cut.conditional_dict3()
+    assert expected == result
+
+
+def test_conditional_dict3_single_drop_value():
+    # Drop a single value. This applies to common drop only
+    sample_pool = [int(x) for x in range(-65535, 65535)]
+    sample_pool.remove(TODICT_COMMON_DROP_VAL)
+    expected = {
+        "a": TODICT_COMMON_DROP_VAL,
+        "b": random.choice(sample_pool),
+        "c": random.choice(sample_pool),
+    }
+    cut = ToDictTest(expected["a"], expected["b"], expected["c"], 0, 0)
+    expected["a"] = None
+    result = cut.conditional_dict3()
+    assert expected == result
+
+    expected = {
+        "a": random.choice(sample_pool),
+        "b": TODICT_COMMON_DROP_VAL,
+        "c": random.choice(sample_pool),
+    }
+    cut = ToDictTest(expected["a"], expected["b"], expected["c"], 0, 0)
+    expected["b"] = None
+    result = cut.conditional_dict3()
+    assert expected == result
+
+    expected = {
+        "a": random.choice(sample_pool),
+        "b": random.choice(sample_pool),
+        "c": TODICT_COMMON_DROP_VAL,
+    }
+    cut = ToDictTest(expected["a"], expected["b"], expected["c"], 0, 0)
+    result = cut.conditional_dict3()
+    assert expected == result
+
+
+def test_conditional_dict3_drop_all_values():
+    # Drop all values. This applies to common drop only
+    expected = {
+        "a": TODICT_COMMON_DROP_VAL,
+        "b": TODICT_COMMON_DROP_VAL,
+        "c": TODICT_COMMON_DROP_VAL,
+    }
+    cut = ToDictTest(expected["a"], expected["b"], expected["c"], 0, 0)
+    expected["a"] = None
+    expected["b"] = None
+    result = cut.conditional_dict3()
+    assert expected == result
