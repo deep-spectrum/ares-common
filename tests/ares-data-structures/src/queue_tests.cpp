@@ -276,7 +276,7 @@ TEST(queue_api, queue_multithread_competition) {
     // the 3 receive.
 
 #if defined(SKIP_RT_TESTS)
-    GTEST_SKIP();
+    GTEST_SKIP_("Realtime tests disabled");
 #endif
 
     ares::queue<int> cut;
@@ -314,7 +314,8 @@ TEST(queue_api, queue_multithread_competition) {
     t3.join();
 
     if (error) {
-        GTEST_SKIP();
+        GTEST_SKIP_("Unable to update thread priorities. Please check the "
+                    "realtime thread priority configurations.");
     }
 
     for (size_t i = 0u; i < 3; i++) {
