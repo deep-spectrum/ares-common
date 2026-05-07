@@ -289,3 +289,99 @@ TEST(queue_api, bounded_queue_overwrite_basic_functionality_multi) {
     ASSERT_EQ(cut.size(), 0);
     ASSERT_EQ(val, data[0]);
 }
+
+template <size_t size, bool overwrite>
+static void release_queue_wait(ares::bounded_queue<int, size, overwrite> &cut,
+                               bool &released_var,
+                               std::chrono::milliseconds timeout) {
+    released_var = false;
+    std::this_thread::sleep_for(timeout);
+    released_var = true;
+    cut.put(0);
+}
+
+TEST(queue_api, bounded_queue_empty_get) {
+    ares::bounded_queue<int> single_no_overwrite_cut;
+    ares::bounded_queue<int, 3> multi_no_overwrite_cut;
+    ares::bounded_queue<int, 1, true> single_overwrite_cut;
+    ares::bounded_queue<int, 3, true> multi_overwrite_cut;
+    std::thread t[8];
+
+    // single non-overwriting
+    ASSERT_THROW(single_no_overwrite_cut.get(100ms), ares::queue_exception);
+    ASSERT_THROW(single_no_overwrite_cut.get_nonblocking(),
+                 ares::queue_exception);
+
+    bool released = false;
+    t[0] = std::thread(release_queue_wait<1, false>,
+                       std::ref(single_no_overwrite_cut), std::ref(released),
+                       500ms);
+    ASSERT_NO_THROW(single_no_overwrite_cut.get()); // blocking call
+    ASSERT_TRUE(released);
+
+    released = false;
+    t[1] = std::thread(release_queue_wait<1, false>,
+                       std::ref(single_no_overwrite_cut), std::ref(released),
+                       100ms);
+    ASSERT_NO_THROW(single_no_overwrite_cut.get(1s)); // blocking 1 second
+    ASSERT_TRUE(released);
+
+    // multi non-overwriting
+    ASSERT_THROW(multi_no_overwrite_cut.get(100ms), ares::queue_exception);
+    ASSERT_THROW(multi_no_overwrite_cut.get_nonblocking(),
+                 ares::queue_exception);
+
+    released = false;
+    t[2] = std::thread(release_queue_wait<3, false>,
+                       std::ref(multi_no_overwrite_cut), std::ref(released),
+                       500ms);
+    ASSERT_NO_THROW(multi_no_overwrite_cut.get()); // blocking call
+    ASSERT_TRUE(released);
+
+    released = false;
+    t[3] = std::thread(release_queue_wait<3, false>,
+                       std::ref(multi_no_overwrite_cut), std::ref(released),
+                       100ms);
+    ASSERT_NO_THROW(multi_no_overwrite_cut.get(1s)); // blocking 1 second
+    ASSERT_TRUE(released);
+
+    // single overwriting
+    ASSERT_THROW(single_overwrite_cut.get(100ms), ares::queue_exception);
+    ASSERT_THROW(single_overwrite_cut.get_nonblocking(), ares::queue_exception);
+
+    released = false;
+    t[4] =
+        std::thread(release_queue_wait<1, true>, std::ref(single_overwrite_cut),
+                    std::ref(released), 500ms);
+    ASSERT_NO_THROW(single_overwrite_cut.get()); // blocking call
+    ASSERT_TRUE(released);
+
+    released = false;
+    t[5] =
+        std::thread(release_queue_wait<1, true>, std::ref(single_overwrite_cut),
+                    std::ref(released), 100ms);
+    ASSERT_NO_THROW(single_overwrite_cut.get(1s)); // blocking 1 second
+    ASSERT_TRUE(released);
+
+    // multi overwriting
+    ASSERT_THROW(multi_overwrite_cut.get(100ms), ares::queue_exception);
+    ASSERT_THROW(multi_overwrite_cut.get_nonblocking(), ares::queue_exception);
+
+    released = false;
+    t[6] =
+        std::thread(release_queue_wait<3, true>, std::ref(multi_overwrite_cut),
+                    std::ref(released), 500ms);
+    ASSERT_NO_THROW(multi_overwrite_cut.get()); // blocking call
+    ASSERT_TRUE(released);
+
+    released = false;
+    t[7] =
+        std::thread(release_queue_wait<3, true>, std::ref(multi_overwrite_cut),
+                    std::ref(released), 100ms);
+    ASSERT_NO_THROW(multi_overwrite_cut.get(1s)); // blocking 1 second
+    ASSERT_TRUE(released);
+
+    for (auto &thread : t) {
+        thread.join();
+    }
+}
