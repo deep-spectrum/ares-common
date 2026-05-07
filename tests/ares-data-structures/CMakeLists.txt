@@ -24,7 +24,7 @@ set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
 
 enable_testing()
 
-include_directories(../../include)
+include_directories(../../include include)
 
 if (RT_TESTS)
     message(STATUS "Adding realtime tests")
@@ -46,9 +46,15 @@ target_link_libraries(slist_test GTest::gtest_main)
 
 add_executable(
         queue_test
-        src/queue_tests.cpp
+        src/queue_tests.cpp src/thread_utils.cpp
 )
 target_link_libraries(queue_test GTest::gtest_main)
+
+add_executable(
+        bounded_queue_test
+        src/bounded_queue_tests.cpp src/thread_utils.cpp
+)
+target_link_libraries(bounded_queue_test GTest::gtest_main)
 
 ################################################
 # Discover tests here
@@ -57,3 +63,4 @@ target_link_libraries(queue_test GTest::gtest_main)
 include(GoogleTest)
 gtest_discover_tests(slist_test)
 gtest_discover_tests(queue_test)
+gtest_discover_tests(bounded_queue_test)

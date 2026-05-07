@@ -12,6 +12,7 @@
 #include <chrono>
 #include <gtest/gtest.h>
 #include <thread>
+#include <thread_utils.hpp>
 
 using namespace std::chrono_literals;
 
@@ -176,88 +177,6 @@ TEST(queue_api, queue_put2threads) {
     ASSERT_FALSE(timed_out1);
     ASSERT_FALSE(timed_out2);
     ASSERT_EQ(num_received, (2 * num_to_send));
-}
-
-extern "C" {
-#include <pthread.h>
-#include <stdio.h>
-static int set_thread_prio(int new_prio) {
-    pthread_t tid = pthread_self();
-    struct sched_param param {};
-    cpu_set_t cpu_set;
-    int policy;
-    int prio = 10 + new_prio;
-
-    int ret = pthread_getschedparam(tid, &policy, &param);
-    if (ret != 0) {
-        perror("pthread_getschedparam()");
-        return -errno;
-    }
-
-    printf("    policy=%s, priority=%d\n",
-           (policy == SCHED_FIFO)    ? "SCHED_FIFO"
-           : (policy == SCHED_RR)    ? "SCHED_RR"
-           : (policy == SCHED_OTHER) ? "SCHED_OTHER"
-                                     : "???",
-           param.sched_priority);
-
-    param.sched_priority = prio;
-    ret = pthread_setschedparam(tid, SCHED_FIFO, &param);
-    if (ret != 0) {
-        perror("pthread_setschedparam()");
-        return -errno;
-    }
-
-    CPU_ZERO(&cpu_set);
-    CPU_SET(0, &cpu_set);
-
-    ret = pthread_setaffinity_np(tid, sizeof(cpu_set_t), &cpu_set);
-    if (ret != 0) {
-        perror("pthread_setaffinity_np()");
-        return -errno;
-    }
-
-    ret = pthread_getschedparam(tid, &policy, &param);
-    if (ret != 0) {
-        perror("pthread_getschedparam()");
-        return -errno;
-    }
-
-    printf("    policy=%s, priority=%d\n",
-           (policy == SCHED_FIFO)    ? "SCHED_FIFO"
-           : (policy == SCHED_RR)    ? "SCHED_RR"
-           : (policy == SCHED_OTHER) ? "SCHED_OTHER"
-                                     : "???",
-           param.sched_priority);
-
-    return 0;
-}
-}
-
-enum thread_prio {
-    HIGH,
-    MED,
-    LOW,
-};
-
-static int change_thread_prio(thread_prio prio) {
-    int thread_prio;
-
-    switch (prio) {
-    case HIGH:
-        thread_prio = 0;
-        break;
-    case MED:
-        thread_prio = 20;
-        break;
-    case LOW:
-        thread_prio = 40;
-        break;
-    default:
-        return -EINVAL;
-    }
-
-    return set_thread_prio(thread_prio);
 }
 
 static void wait_for_queue(ares::queue<int> &cut, thread_prio prio, int &ret,
