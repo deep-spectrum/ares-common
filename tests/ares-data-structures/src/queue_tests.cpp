@@ -178,7 +178,119 @@ TEST(queue_api, queue_put2threads) {
     ASSERT_EQ(num_received, (2 * num_to_send));
 }
 
+extern "C" {
+#include <pthread.h>
+#include <stdio.h>
+static void set_thread_prio(int new_prio) {
+    pthread_t tid = pthread_self();
+    struct sched_param param {};
+    int policy;
+    int prio = 10 + new_prio;
+
+    int ret = pthread_getschedparam(tid, &policy, &param);
+    if (ret != 0) {
+        perror("pthread_getschedparam()");
+        return;
+    }
+
+    printf("    policy=%s, priority=%d\n",
+           (policy == SCHED_FIFO)    ? "SCHED_FIFO"
+           : (policy == SCHED_RR)    ? "SCHED_RR"
+           : (policy == SCHED_OTHER) ? "SCHED_OTHER"
+                                     : "???",
+           param.sched_priority);
+
+    param.sched_priority = prio;
+    ret = pthread_setschedparam(tid, SCHED_FIFO, &param);
+    if (ret != 0) {
+        perror("pthread_setschedparam()");
+        return;
+    }
+
+    ret = pthread_getschedparam(tid, &policy, &param);
+    if (ret != 0) {
+        perror("pthread_getschedparam()");
+        return;
+    }
+
+    printf("    policy=%s, priority=%d\n",
+           (policy == SCHED_FIFO)    ? "SCHED_FIFO"
+           : (policy == SCHED_RR)    ? "SCHED_RR"
+           : (policy == SCHED_OTHER) ? "SCHED_OTHER"
+                                     : "???",
+           param.sched_priority);
+}
+}
+
+enum thread_prio {
+    HIGH,
+    MED,
+    LOW,
+};
+
+static void change_thread_prio(thread_prio prio) {
+    int thread_prio;
+
+    switch (prio) {
+    case HIGH:
+        thread_prio = 0;
+        break;
+    case MED:
+        thread_prio = 10;
+        break;
+    case LOW:
+        thread_prio = 20;
+        break;
+    default:
+        return;
+    }
+
+    set_thread_prio(thread_prio);
+}
+
+static void wait_for_queue(ares::queue<int> &cut, thread_prio prio, int &ret,
+                           volatile bool &ready) {
+    change_thread_prio(prio);
+    ready = true;
+    ret = cut.get();
+}
+
 TEST(queue_api, queue_multithread_competition) {
     // spawn 3 threads, 1 high prio, 1 med prio, 1 low prio. parent puts while
     // the 3 receive.
+    GTEST_SKIP();
+
+    ares::queue<int> cut;
+    int data[3] = {
+        0xaaaa,
+        0xbbbb,
+        0xcccc,
+    };
+    int ret[3];
+    volatile bool ready[3] = {false};
+
+    std::thread t1(wait_for_queue, std::ref(cut), HIGH, std::ref(ret[0]),
+                   std::ref(ready[0]));
+    std::thread t2(wait_for_queue, std::ref(cut), MED, std::ref(ret[1]),
+                   std::ref(ready[1]));
+    std::thread t3(wait_for_queue, std::ref(cut), LOW, std::ref(ret[2]),
+                   std::ref(ready[2]));
+
+    std::this_thread::sleep_for(10ms);
+    for (bool i : ready) {
+        while (!i)
+            ;
+    }
+
+    for (int &i : data) {
+        cut.put(i);
+    }
+
+    t1.join();
+    t2.join();
+    t3.join();
+
+    for (size_t i = 0u; i < 3; i++) {
+        ASSERT_EQ(data[i], ret[i]);
+    }
 }
