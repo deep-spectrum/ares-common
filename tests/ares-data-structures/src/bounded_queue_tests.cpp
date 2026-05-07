@@ -495,13 +495,14 @@ run_thread2thread_test(ares::bounded_queue<int, size, overwrite> &cut,
     }
 }
 
-TEST(queue_api, bounded_queue_single_blocking_thread2thread) {
+TEST(queue_api, bounded_queue_single_no_overwrite_thread2thread) {
     ares::bounded_queue<int> cut;
 
     ThreadPutParams put_params = {
         .num_items = 100,
         .max_exec_time = 1s,
         .sleep_period = 0ms,
+        .put_time = 1s,
     };
 
     ThreadGetParams get_params = {
@@ -518,26 +519,27 @@ TEST(queue_api, bounded_queue_single_blocking_thread2thread) {
     run_thread2thread_test(cut, put_params, get_params, range);
 
     // fast putting, slow getting
-    put_params.max_exec_time = 5s;
+    put_params.max_exec_time = put_params.put_time = 5s;
     get_params.timeout = 10s;
     get_params.sleep_period = 50ms;
     run_thread2thread_test(cut, put_params, get_params, range);
 
     // slow putting, fast getting
-    put_params.max_exec_time = 100s;
+    put_params.max_exec_time = put_params.put_time = 100s;
     put_params.sleep_period = 100ms;
     get_params.timeout = 10s;
     get_params.sleep_period = 0ms;
     run_thread2thread_test(cut, put_params, get_params, range);
 }
 
-TEST(queue_api, bounded_queue_multi_blocking_thread2thread) {
+TEST(queue_api, bounded_queue_multi_no_overwrite_thread2thread) {
     ares::bounded_queue<int, 3> cut;
 
     ThreadPutParams put_params = {
         .num_items = 100,
         .max_exec_time = 1s,
         .sleep_period = 0ms,
+        .put_time = 1s,
     };
 
     ThreadGetParams get_params = {
@@ -554,20 +556,20 @@ TEST(queue_api, bounded_queue_multi_blocking_thread2thread) {
     run_thread2thread_test(cut, put_params, get_params, range);
 
     // fast putting, slow getting
-    put_params.max_exec_time = 5s;
+    put_params.max_exec_time = put_params.put_time = 5s;
     get_params.timeout = 10s;
     get_params.sleep_period = 50ms;
     run_thread2thread_test(cut, put_params, get_params, range);
 
     // slow putting, fast getting
-    put_params.max_exec_time = 100s;
+    put_params.max_exec_time = put_params.put_time = 100s;
     put_params.sleep_period = 100ms;
     get_params.timeout = 10s;
     get_params.sleep_period = 0ms;
     run_thread2thread_test(cut, put_params, get_params, range);
 }
 
-TEST(queue_api, bounded_queue_single_non_blocking_thread2thread) {
+TEST(queue_api, bounded_queue_single_overwrite_thread2thread) {
     ares::bounded_queue<int, 1, true> cut;
 
     ThreadPutParams put_params = {
@@ -597,6 +599,48 @@ TEST(queue_api, bounded_queue_single_non_blocking_thread2thread) {
     get_params.sleep_period = 100ms;
     range.lower_bound = 45;
     range.upper_bound = 55;
+    run_thread2thread_test(cut, put_params, get_params, range);
+
+    // slow putting, fast getting
+    put_params.max_exec_time = 100s;
+    put_params.sleep_period = 100ms;
+    get_params.timeout = 10s;
+    get_params.sleep_period = 0ms;
+    range.lower_bound = 100;
+    range.upper_bound = 100;
+    run_thread2thread_test(cut, put_params, get_params, range);
+}
+
+TEST(queue_api, bounded_queue_multi_overwrite_thread2thread) {
+    ares::bounded_queue<int, 3, true> cut;
+
+    ThreadPutParams put_params = {
+        .num_items = 100,
+        .max_exec_time = 1s,
+        .sleep_period = 0ms,
+        .put_time = 1s,
+    };
+
+    ThreadGetParams get_params = {
+        .timeout = 1s,
+        .sleep_period = 0ms,
+    };
+
+    Range range = {
+        .lower_bound = 95,
+        .upper_bound = 100,
+    };
+
+    // basic thread2thread
+    run_thread2thread_test(cut, put_params, get_params, range);
+
+    // fast putting, slow getting
+    put_params.max_exec_time = 50s;
+    put_params.put_time = 50ms;
+    get_params.timeout = 10s;
+    get_params.sleep_period = 100ms;
+    range.lower_bound = 40;
+    range.upper_bound = 60;
     run_thread2thread_test(cut, put_params, get_params, range);
 
     // slow putting, fast getting
