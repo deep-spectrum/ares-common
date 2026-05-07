@@ -4,6 +4,10 @@ project(data_structure4_tests)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# The idiots of the C++ standard didn't think about thread priority when
+# implementing conditional variables. Fucking idiots...
+option(SKIP_RT_TESTS "Skip realtime tests" ON)
+
 include(FetchContent)
 FetchContent_Declare(
         googletest
@@ -21,6 +25,13 @@ set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
 enable_testing()
 
 include_directories(../../include)
+
+if (SKIP_RT_TESTS)
+    message(STATUS "Skipping realtime tests")
+    add_definitions(-DSKIP_RT_TESTS)
+else ()
+    message(STATUS "Adding realtime tests")
+endif ()
 
 ################################################
 # Add test executables here

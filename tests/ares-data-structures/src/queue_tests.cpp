@@ -181,16 +181,17 @@ TEST(queue_api, queue_put2threads) {
 extern "C" {
 #include <pthread.h>
 #include <stdio.h>
-static void set_thread_prio(int new_prio) {
+static int set_thread_prio(int new_prio) {
     pthread_t tid = pthread_self();
     struct sched_param param {};
+    cpu_set_t cpu_set;
     int policy;
     int prio = 10 + new_prio;
 
     int ret = pthread_getschedparam(tid, &policy, &param);
     if (ret != 0) {
         perror("pthread_getschedparam()");
-        return;
+        return -errno;
     }
 
     printf("    policy=%s, priority=%d\n",
@@ -204,13 +205,22 @@ static void set_thread_prio(int new_prio) {
     ret = pthread_setschedparam(tid, SCHED_FIFO, &param);
     if (ret != 0) {
         perror("pthread_setschedparam()");
-        return;
+        return -errno;
+    }
+
+    CPU_ZERO(&cpu_set);
+    CPU_SET(0, &cpu_set);
+
+    ret = pthread_setaffinity_np(tid, sizeof(cpu_set_t), &cpu_set);
+    if (ret != 0) {
+        perror("pthread_setaffinity_np()");
+        return -errno;
     }
 
     ret = pthread_getschedparam(tid, &policy, &param);
     if (ret != 0) {
         perror("pthread_getschedparam()");
-        return;
+        return -errno;
     }
 
     printf("    policy=%s, priority=%d\n",
@@ -219,6 +229,8 @@ static void set_thread_prio(int new_prio) {
            : (policy == SCHED_OTHER) ? "SCHED_OTHER"
                                      : "???",
            param.sched_priority);
+
+    return 0;
 }
 }
 
@@ -228,7 +240,7 @@ enum thread_prio {
     LOW,
 };
 
-static void change_thread_prio(thread_prio prio) {
+static int change_thread_prio(thread_prio prio) {
     int thread_prio;
 
     switch (prio) {
@@ -236,21 +248,25 @@ static void change_thread_prio(thread_prio prio) {
         thread_prio = 0;
         break;
     case MED:
-        thread_prio = 10;
-        break;
-    case LOW:
         thread_prio = 20;
         break;
+    case LOW:
+        thread_prio = 40;
+        break;
     default:
-        return;
+        return -EINVAL;
     }
 
-    set_thread_prio(thread_prio);
+    return set_thread_prio(thread_prio);
 }
 
 static void wait_for_queue(ares::queue<int> &cut, thread_prio prio, int &ret,
-                           volatile bool &ready) {
-    change_thread_prio(prio);
+                           volatile bool &ready, volatile bool &error) {
+    int prio_ret = change_thread_prio(prio);
+    if (prio_ret < 0) {
+        error = true;
+        return;
+    }
     ready = true;
     ret = cut.get();
 }
@@ -258,7 +274,10 @@ static void wait_for_queue(ares::queue<int> &cut, thread_prio prio, int &ret,
 TEST(queue_api, queue_multithread_competition) {
     // spawn 3 threads, 1 high prio, 1 med prio, 1 low prio. parent puts while
     // the 3 receive.
+
+#if defined(SKIP_RT_TESTS)
     GTEST_SKIP();
+#endif
 
     ares::queue<int> cut;
     int data[3] = {
@@ -268,18 +287,22 @@ TEST(queue_api, queue_multithread_competition) {
     };
     int ret[3];
     volatile bool ready[3] = {false};
+    volatile bool errors[3] = {false};
 
     std::thread t1(wait_for_queue, std::ref(cut), HIGH, std::ref(ret[0]),
-                   std::ref(ready[0]));
+                   std::ref(ready[0]), std::ref(errors[0]));
     std::thread t2(wait_for_queue, std::ref(cut), MED, std::ref(ret[1]),
-                   std::ref(ready[1]));
+                   std::ref(ready[1]), std::ref(errors[1]));
     std::thread t3(wait_for_queue, std::ref(cut), LOW, std::ref(ret[2]),
-                   std::ref(ready[2]));
+                   std::ref(ready[2]), std::ref(errors[2]));
 
     std::this_thread::sleep_for(10ms);
-    for (bool i : ready) {
-        while (!i)
+
+    bool error = false;
+    for (size_t i = 0u; i < 3; i++) {
+        while (!ready[i] && !errors[i])
             ;
+        error = errors[i] || error;
     }
 
     for (int &i : data) {
@@ -289,6 +312,10 @@ TEST(queue_api, queue_multithread_competition) {
     t1.join();
     t2.join();
     t3.join();
+
+    if (error) {
+        GTEST_SKIP();
+    }
 
     for (size_t i = 0u; i < 3; i++) {
         ASSERT_EQ(data[i], ret[i]);
