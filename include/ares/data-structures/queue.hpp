@@ -381,7 +381,7 @@ void bounded_queue<Type, max_size, overwrite>::put(
     _buffer[_producer_index] = std::forward<U>(item);
     _producer_index = (_producer_index + 1) % max_size;
     _size += 1;
-    if (_size >= max_size) {
+    if (_size > max_size) {
         _size = max_size;
         if (overwrite) {
             _consumer_index = (_consumer_index + 1) % max_size;
