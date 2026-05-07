@@ -107,8 +107,6 @@ TEST(queue_api, queue_empty_get) {
     t2.join();
 }
 
-#include <iostream>
-
 static void thread_put(ares::queue<int> &cut, size_t num_items, bool &timed_out,
                        const std::chrono::milliseconds &max_execution_time) {
     int val = 0;
@@ -146,7 +144,7 @@ TEST(queue_api, queue_thread2thread) {
     size_t expected_num_received = 10;
     bool timed_out;
 
-    std::thread t1(thread_get, std::ref(cut), std::ref(num_received), 1ms);
+    std::thread t1(thread_get, std::ref(cut), std::ref(num_received), 1s);
     std::thread t2(thread_put, std::ref(cut), expected_num_received,
                    std::ref(timed_out), 500ms);
 
