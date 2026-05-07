@@ -509,4 +509,33 @@ TEST(queue_api, bounded_queue_single_blocking_thread2thread) {
     run_thread2thread_test(cut, put_params, get_params);
 }
 
-TEST(queue_api, bounded_queue_multi_blocking_thread2thread) {}
+TEST(queue_api, bounded_queue_multi_blocking_thread2thread) {
+    ares::bounded_queue<int, 3> cut;
+
+    ThreadPutParams put_params = {
+        .num_items = 100,
+        .max_exec_time = 1s,
+        .sleep_period = 0ms,
+    };
+
+    ThreadGetParams get_params = {
+        .timeout = 1s,
+        .sleep_period = 0ms,
+    };
+
+    // basic thread2thread
+    run_thread2thread_test(cut, put_params, get_params);
+
+    // fast putting, slow getting
+    put_params.max_exec_time = 5s;
+    get_params.timeout = 10s;
+    get_params.sleep_period = 50ms;
+    run_thread2thread_test(cut, put_params, get_params);
+
+    // slow putting, fast getting
+    put_params.max_exec_time = 100s;
+    put_params.sleep_period = 100ms;
+    get_params.timeout = 10s;
+    get_params.sleep_period = 0ms;
+    run_thread2thread_test(cut, put_params, get_params);
+}
