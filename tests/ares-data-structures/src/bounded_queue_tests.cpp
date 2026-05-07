@@ -150,3 +150,70 @@ TEST(queue_api, bounded_queue_no_overwrite_basic_functionality_multi) {
     ASSERT_EQ(cut.size(), 0);
     ASSERT_EQ(val, data[2]);
 }
+
+TEST(queue_api, bounded_queue_overwrite_basic_functionality_single) {
+    ares::bounded_queue<int, 1, true> cut;
+
+    int data[] = {
+        0xAAAA,
+        0xBBBB,
+        0xCCCC,
+    };
+    int val;
+
+    // Empty tests & size tests SINGLE
+    ASSERT_TRUE(cut.empty());
+    ASSERT_FALSE(cut.full());
+    ASSERT_EQ(cut.size(), 0);
+
+    cut.put(data[0]);
+    ASSERT_FALSE(cut.empty());
+    ASSERT_TRUE(cut.full());
+    ASSERT_EQ(cut.size(), 1);
+
+    cut.clear();
+    ASSERT_TRUE(cut.empty());
+    ASSERT_FALSE(cut.full());
+    ASSERT_EQ(cut.size(), 0);
+
+    cut.clear();
+    ASSERT_TRUE(cut.empty());
+    ASSERT_FALSE(cut.full());
+    ASSERT_EQ(cut.size(), 0);
+
+    // Empty & size multiple entries
+    ASSERT_NO_THROW(cut.put_nonblocking(data[0]));
+    ASSERT_NO_THROW(cut.put_nonblocking(data[1]));
+    ASSERT_EQ(cut.size(), 1);
+
+    cut.clear();
+
+    // Basic putting and getting single
+    ASSERT_NO_THROW(cut.put_nonblocking(data[0]));
+    ASSERT_EQ(cut.size(), 1);
+    ASSERT_NO_THROW(val = cut.get_nonblocking());
+    ASSERT_EQ(cut.size(), 0);
+    ASSERT_EQ(val, data[0]);
+
+    // Basic putting and getting multi
+    ASSERT_NO_THROW(cut.put_nonblocking(data[0]));
+    ASSERT_NO_THROW(cut.put_nonblocking(data[1]));
+    ASSERT_EQ(cut.size(), 1);
+    ASSERT_NO_THROW(val = cut.get_nonblocking());
+    ASSERT_EQ(cut.size(), 0);
+    ASSERT_EQ(val, data[1]);
+
+    ASSERT_NO_THROW(cut.put_nonblocking(data[1]));
+    ASSERT_NO_THROW(cut.put_nonblocking(data[2]));
+    ASSERT_EQ(cut.size(), 1);
+    ASSERT_NO_THROW(val = cut.get_nonblocking());
+    ASSERT_EQ(cut.size(), 0);
+    ASSERT_EQ(val, data[2]);
+
+    ASSERT_NO_THROW(cut.put_nonblocking(data[2]));
+    ASSERT_NO_THROW(cut.put_nonblocking(data[0]));
+    ASSERT_EQ(cut.size(), 1);
+    ASSERT_NO_THROW(val = cut.get_nonblocking());
+    ASSERT_EQ(cut.size(), 0);
+    ASSERT_EQ(val, data[0]);
+}
