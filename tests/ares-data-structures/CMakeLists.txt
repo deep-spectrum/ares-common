@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # The idiots of the C++ standard didn't think about thread priority when
 # implementing conditional variables. Fucking idiots...
-option(SKIP_RT_TESTS "Skip realtime tests" ON)
+option(RT_TESTS "Add realtime tests" OFF)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -26,12 +26,12 @@ enable_testing()
 
 include_directories(../../include)
 
-if (SKIP_RT_TESTS)
-    message(STATUS "Skipping realtime tests")
-    add_definitions(-DSKIP_RT_TESTS)
-else ()
+if (RT_TESTS)
     message(STATUS "Adding realtime tests")
     message(WARNING "This requires realtime threading to be enabled. To check if you have realtime threads, run `ulimit -Hr` and `ulimit -Sr` and make sure you have a sufficient amount of realtime threads available. If not, the realtime tests will be skipped...")
+else ()
+    message(STATUS "Skipping realtime tests")
+    add_definitions(-DSKIP_RT_TESTS)
 endif ()
 
 ################################################
