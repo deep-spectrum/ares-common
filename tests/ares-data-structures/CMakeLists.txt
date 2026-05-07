@@ -31,6 +31,7 @@ if (SKIP_RT_TESTS)
     add_definitions(-DSKIP_RT_TESTS)
 else ()
     message(STATUS "Adding realtime tests")
+    message(WARNING "This requires realtime threading to be enabled. To check if you have realtime threads, run `ulimit -Hr` and `ulimit -Sr` and make sure you have a sufficient amount of realtime threads available. If not, the realtime tests will be skipped...")
 endif ()
 
 ################################################
