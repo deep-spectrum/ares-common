@@ -44,9 +44,16 @@ add_executable(
 )
 target_link_libraries(spinlock_test GTest::gtest_main)
 
+add_executable(
+        semaphore_test
+        src/semaphore_tests.cpp
+)
+target_link_libraries(semaphore_test GTest::gtest_main)
+
 ################################################
 # Discover tests here
 ################################################
 
 include(GoogleTest)
 gtest_discover_tests(spinlock_test)
+gtest_discover_tests(semaphore_test)
