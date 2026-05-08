@@ -746,3 +746,55 @@ TEST(queue_api, bounded_queue_single_blocking_put2threads) {
                          "1 slow putting thread, 1 fast putting thread, 1 slow "
                          "receiving thread");
 }
+
+TEST(queue_api, bounded_queue_multi_blocking_put2threads) {
+    ares::bounded_queue<int, 3> cut;
+    std::array<ThreadPutParams, 2> put_params = {{
+        {100, 1s, 0ms, 1s},
+        {100, 1s, 0ms, 1s},
+    }};
+
+    ThreadGetParams get_params = {
+        .timeout = 3s,
+        .sleep_period = 0ms,
+    };
+
+    // basic 2 threads putting, 1 receiving
+    run_put2threads_test(cut, put_params, get_params,
+                         "basic 2 threads putting, 1 receiving");
+
+    // 1 slow putting thread, 1 fast putting thread, 1 fast receiving
+    put_params[0].sleep_period = 50ms;
+    put_params[0].max_exec_time = 10s;
+    put_params[0].num_items = 50;
+    get_params.timeout = 10s;
+    cut.clear();
+    run_put2threads_test(
+        cut, put_params, get_params,
+        "1 slow putting thread, 1 fast putting thread, 1 fast receiving");
+
+    // 2 slow putting threads, 1 fast receiving
+    put_params[1].sleep_period = 50ms;
+    put_params[1].max_exec_time = 10s;
+    put_params[1].num_items = 50;
+    cut.clear();
+    run_put2threads_test(cut, put_params, get_params,
+                         "2 slow putting threads, 1 fast receiving");
+
+    // 2 fast putting threads, 1 slow receiving thread
+    put_params[0].sleep_period = 0ms;
+    put_params[0].max_exec_time = 10s;
+    put_params[1].sleep_period = 0ms;
+    put_params[1].max_exec_time = 10s;
+    get_params.sleep_period = 100ms;
+    get_params.timeout = 10s;
+    cut.clear();
+    run_put2threads_test(cut, put_params, get_params,
+                         "2 fast putting threads, 1 slow receiving thread");
+
+    // 1 slow putting thread, 1 fast putting thread, 1 slow receiving thread
+    put_params[0].sleep_period = 50ms;
+    run_put2threads_test(cut, put_params, get_params,
+                         "1 slow putting thread, 1 fast putting thread, 1 slow "
+                         "receiving thread");
+}
