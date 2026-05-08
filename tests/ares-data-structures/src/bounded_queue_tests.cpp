@@ -1054,3 +1054,12 @@ TEST(queue_api, bounded_queue_single_overwrite_multithread_competition) {
     ares::bounded_queue<int, 1, true> cut;
     test_thread_competition(cut, 1s, "");
 }
+
+TEST(queue_api, bounded_queue_multi_overwrite_multithread_competition) {
+#if defined(SKIP_RT_TESTS)
+    GTEST_SKIP() << "Realtime tests disabled";
+#endif
+
+    ares::bounded_queue<int> cut;
+    test_thread_competition(cut, 1s, "");
+}
