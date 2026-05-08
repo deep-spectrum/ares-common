@@ -470,7 +470,7 @@ template <size_t size, bool overwrite>
 static void
 run_thread2thread_test(ares::bounded_queue<int, size, overwrite> &cut,
                        ThreadPutParams put_params, ThreadGetParams get_params,
-                       Range range) {
+                       Range range, const std::string &test_desc) {
     ThreadPutResults put_results{};
     ThreadGetResults get_results{};
     std::thread threads[2];
@@ -484,15 +484,16 @@ run_thread2thread_test(ares::bounded_queue<int, size, overwrite> &cut,
         t.join();
     }
 
-    ASSERT_FALSE(put_results.timed_out);
+    ASSERT_FALSE(put_results.timed_out) << test_desc;
 
     if (!overwrite) {
-        ASSERT_EQ(put_params.num_items, get_results.num_received);
-        ASSERT_EQ(get_results.num_skipped, 0);
+        ASSERT_EQ(put_params.num_items, get_results.num_received) << test_desc;
+        ASSERT_EQ(get_results.num_skipped, 0) << test_desc;
     } else {
-        ASSERT_PRED2(check_range, range, get_results.num_received);
+        ASSERT_PRED2(check_range, range, get_results.num_received) << test_desc;
         ASSERT_EQ((get_results.num_received + get_results.num_skipped),
-                  put_params.num_items);
+                  put_params.num_items)
+            << test_desc;
     }
 }
 
@@ -517,20 +518,23 @@ TEST(queue_api, bounded_queue_single_no_overwrite_thread2thread) {
     };
 
     // basic thread2thread
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "basic thread2thread");
 
     // fast putting, slow getting
     put_params.max_exec_time = put_params.put_time = 5s;
     get_params.timeout = 10s;
     get_params.sleep_period = 50ms;
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "fast putting, slow getting");
 
     // slow putting, fast getting
     put_params.max_exec_time = put_params.put_time = 100s;
     put_params.sleep_period = 100ms;
     get_params.timeout = 10s;
     get_params.sleep_period = 0ms;
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "slow putting, fast getting");
 }
 
 TEST(queue_api, bounded_queue_multi_no_overwrite_thread2thread) {
@@ -554,20 +558,23 @@ TEST(queue_api, bounded_queue_multi_no_overwrite_thread2thread) {
     };
 
     // basic thread2thread
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "basic thread2thread");
 
     // fast putting, slow getting
     put_params.max_exec_time = put_params.put_time = 5s;
     get_params.timeout = 10s;
     get_params.sleep_period = 50ms;
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "fast putting, slow getting");
 
     // slow putting, fast getting
     put_params.max_exec_time = put_params.put_time = 100s;
     put_params.sleep_period = 100ms;
     get_params.timeout = 10s;
     get_params.sleep_period = 0ms;
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "slow putting, fast getting");
 }
 
 TEST(queue_api, bounded_queue_single_overwrite_thread2thread) {
@@ -591,7 +598,8 @@ TEST(queue_api, bounded_queue_single_overwrite_thread2thread) {
     };
 
     // basic thread2thread
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "basic thread2thread");
 
     // fast putting, slow getting
     put_params.max_exec_time = 50s;
@@ -600,7 +608,8 @@ TEST(queue_api, bounded_queue_single_overwrite_thread2thread) {
     get_params.sleep_period = 100ms;
     range.lower_bound = 45;
     range.upper_bound = 55;
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "fast putting, slow getting");
 
     // slow putting, fast getting
     put_params.max_exec_time = 100s;
@@ -609,7 +618,8 @@ TEST(queue_api, bounded_queue_single_overwrite_thread2thread) {
     get_params.sleep_period = 0ms;
     range.lower_bound = 100;
     range.upper_bound = 100;
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "slow putting, fast getting");
 }
 
 TEST(queue_api, bounded_queue_multi_overwrite_thread2thread) {
@@ -633,7 +643,8 @@ TEST(queue_api, bounded_queue_multi_overwrite_thread2thread) {
     };
 
     // basic thread2thread
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "basic thread2thread");
 
     // fast putting, slow getting
     put_params.max_exec_time = 50s;
@@ -642,7 +653,8 @@ TEST(queue_api, bounded_queue_multi_overwrite_thread2thread) {
     get_params.sleep_period = 100ms;
     range.lower_bound = 40;
     range.upper_bound = 60;
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "fast putting, slow getting");
 
     // slow putting, fast getting
     put_params.max_exec_time = 100s;
@@ -651,7 +663,8 @@ TEST(queue_api, bounded_queue_multi_overwrite_thread2thread) {
     get_params.sleep_period = 0ms;
     range.lower_bound = 100;
     range.upper_bound = 100;
-    run_thread2thread_test(cut, put_params, get_params, range);
+    run_thread2thread_test(cut, put_params, get_params, range,
+                           "slow putting, fast getting");
 }
 
 template <size_t size, bool overwrite>
