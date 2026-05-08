@@ -949,3 +949,90 @@ TEST(queue_api, bounded_queue_multi_overwriting_put2threads) {
                          "1 slow putting thread, 1 fast putting thread, 1 slow "
                          "receiving thread");
 }
+
+struct WaitParams {
+    thread_prio prio;
+    std::chrono::milliseconds timeout;
+};
+
+struct WaitResults {
+    volatile bool ready = false;
+    volatile bool error = false;
+    volatile bool timed_out = false;
+    int ret = -1;
+};
+
+template <size_t size, bool overwrite>
+static void wait_for_queue(ares::bounded_queue<int, size, overwrite> &cut,
+                           WaitParams params, WaitResults &results) {
+    int prio_ret = change_thread_prio(params.prio);
+    if (prio_ret < 0) {
+        results.error = true;
+        return;
+    }
+    results.ready = true;
+
+    try {
+        results.ret = cut.get(params.timeout);
+    } catch (const ares::queue_exception &) {
+        results.timed_out = true;
+    }
+}
+
+template <size_t size, bool overwrite>
+static void
+test_thread_competition(ares::bounded_queue<int, size, overwrite> &cut,
+                        const std::chrono::milliseconds &timeout,
+                        const std::string &test_desc) {
+    int data[3] = {0xaaaa, 0xbbbb, 0xcccc};
+
+    std::thread threads[3];
+    WaitParams params[3] = {
+        {HIGH, timeout},
+        {MED, timeout},
+        {LOW, timeout},
+    };
+    WaitResults results[3];
+
+    for (size_t i = 0; i < 3; i++) {
+        threads[i] = std::thread(wait_for_queue<size, overwrite>, std::ref(cut),
+                                 params[i], std::ref(results[i]));
+    }
+
+    bool error = false;
+    for (auto &result : results) {
+        while (!result.ready && !result.error)
+            ;
+        error = result.error || error;
+    }
+
+    for (int &val : data) {
+        try {
+            cut.put(val, timeout);
+        } catch (const ares::queue_exception &) {
+            // nop. One of the threads probably timed out anyway
+        }
+    }
+
+    for (auto &t : threads) {
+        t.join();
+    }
+
+    if (error) {
+        GTEST_SKIP() << "Unable to update thread priorities. Please check the "
+                        "realtime thread priority configurations.";
+    }
+
+    for (size_t i = 0; i < 3; i++) {
+        ASSERT_EQ(results[i].ret, data[i]) << test_desc;
+    }
+}
+
+TEST(queue_api, bounded_queue_single_no_overwrite_multithread_competition) {
+#if defined(SKIP_RT_TESTS)
+    GTEST_SKIP() << "Realtime tests disabled";
+#endif
+
+    ares::bounded_queue<int> cut;
+    test_thread_competition(cut, 100ms, "");
+}
