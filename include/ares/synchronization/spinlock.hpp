@@ -41,6 +41,12 @@ class SpinLock {
      * Unlock the spinlock.
      */
     void unlock() { _locked.clear(std::memory_order_release); }
+
+#if __cplusplus >= 202002L
+    [[nodiscard]] bool locked() const {
+        return _locked.test(std::memory_order_acquire);
+    }
+#endif
 };
 } // namespace ares
 

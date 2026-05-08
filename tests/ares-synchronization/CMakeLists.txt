@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(data_structure4_tests)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # The idiots of the C++ standard didn't think about thread priority when

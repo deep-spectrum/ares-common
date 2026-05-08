@@ -10,3 +10,17 @@
 
 #include <ares/synchronization/spinlock.hpp>
 #include <gtest/gtest.h>
+
+TEST(spinlock_api, test_spinlock_basic) {
+    ares::SpinLock l;
+
+    ASSERT_FALSE(l.locked());
+
+    l.lock();
+
+    ASSERT_TRUE(l.locked());
+
+    l.unlock();
+
+    ASSERT_FALSE(l.locked());
+}
