@@ -466,6 +466,19 @@ static bool check_range(Range range, size_t value) {
     return (range.lower_bound <= value) && (value <= range.upper_bound);
 }
 
+static testing::AssertionResult check_range_format(const char *range_expr,
+                                                   const char *value_expr,
+                                                   Range range, size_t value) {
+    if (check_range(range, value)) {
+        return testing::AssertionSuccess();
+    }
+
+    return testing::AssertionFailure()
+           << range.lower_bound << " <= " << value_expr
+           << " <= " << range.upper_bound << " (" << value_expr << " is "
+           << value << ")";
+}
+
 template <size_t size, bool overwrite>
 static void
 run_thread2thread_test(ares::bounded_queue<int, size, overwrite> &cut,
@@ -490,7 +503,8 @@ run_thread2thread_test(ares::bounded_queue<int, size, overwrite> &cut,
         ASSERT_EQ(put_params.num_items, get_results.num_received) << test_desc;
         ASSERT_EQ(get_results.num_skipped, 0) << test_desc;
     } else {
-        ASSERT_PRED2(check_range, range, get_results.num_received) << test_desc;
+        ASSERT_PRED_FORMAT2(check_range_format, range, get_results.num_received)
+            << test_desc;
         ASSERT_EQ((get_results.num_received + get_results.num_skipped),
                   put_params.num_items)
             << test_desc;
@@ -670,7 +684,7 @@ TEST(queue_api, bounded_queue_multi_overwrite_thread2thread) {
 template <size_t size, bool overwrite>
 void run_put2threads_test(ares::bounded_queue<int, size, overwrite> &cut,
                           std::array<ThreadPutParams, 2> put_params,
-                          ThreadGetParams get_params,
+                          ThreadGetParams get_params, Range range,
                           const std::string &test_desc) {
     ThreadPutResults put_results[2]{};
     ThreadGetResults get_results{};
@@ -692,7 +706,14 @@ void run_put2threads_test(ares::bounded_queue<int, size, overwrite> &cut,
     for (auto &result : put_results) {
         ASSERT_FALSE(result.timed_out) << test_desc;
     }
-    ASSERT_EQ(get_results.num_received, expected_num_sent) << test_desc;
+
+    if (!overwrite) {
+        ASSERT_EQ(get_results.num_received, expected_num_sent) << test_desc;
+    } else {
+        ASSERT_PRED_FORMAT2(check_range_format, range, get_results.num_received)
+            << test_desc;
+        // num skipped is unreliable in this test
+    }
 }
 
 TEST(queue_api, bounded_queue_single_blocking_put2threads) {
@@ -707,8 +728,11 @@ TEST(queue_api, bounded_queue_single_blocking_put2threads) {
         .sleep_period = 0ms,
     };
 
+    // Placeholder
+    Range range{200, 200};
+
     // basic 2 threads putting, 1 receiving
-    run_put2threads_test(cut, put_params, get_params,
+    run_put2threads_test(cut, put_params, get_params, range,
                          "basic 2 threads putting, 1 receiving");
 
     // 1 slow putting thread, 1 fast putting thread, 1 fast receiving
@@ -718,7 +742,7 @@ TEST(queue_api, bounded_queue_single_blocking_put2threads) {
     get_params.timeout = 10s;
     cut.clear();
     run_put2threads_test(
-        cut, put_params, get_params,
+        cut, put_params, get_params, range,
         "1 slow putting thread, 1 fast putting thread, 1 fast receiving");
 
     // 2 slow putting threads, 1 fast receiving
@@ -726,7 +750,7 @@ TEST(queue_api, bounded_queue_single_blocking_put2threads) {
     put_params[1].max_exec_time = 10s;
     put_params[1].num_items = 50;
     cut.clear();
-    run_put2threads_test(cut, put_params, get_params,
+    run_put2threads_test(cut, put_params, get_params, range,
                          "2 slow putting threads, 1 fast receiving");
 
     // 2 fast putting threads, 1 slow receiving thread
@@ -737,12 +761,12 @@ TEST(queue_api, bounded_queue_single_blocking_put2threads) {
     get_params.sleep_period = 100ms;
     get_params.timeout = 10s;
     cut.clear();
-    run_put2threads_test(cut, put_params, get_params,
+    run_put2threads_test(cut, put_params, get_params, range,
                          "2 fast putting threads, 1 slow receiving thread");
 
     // 1 slow putting thread, 1 fast putting thread, 1 slow receiving thread
     put_params[0].sleep_period = 50ms;
-    run_put2threads_test(cut, put_params, get_params,
+    run_put2threads_test(cut, put_params, get_params, range,
                          "1 slow putting thread, 1 fast putting thread, 1 slow "
                          "receiving thread");
 }
@@ -759,8 +783,11 @@ TEST(queue_api, bounded_queue_multi_blocking_put2threads) {
         .sleep_period = 0ms,
     };
 
+    // Placeholder
+    Range range{200, 200};
+
     // basic 2 threads putting, 1 receiving
-    run_put2threads_test(cut, put_params, get_params,
+    run_put2threads_test(cut, put_params, get_params, range,
                          "basic 2 threads putting, 1 receiving");
 
     // 1 slow putting thread, 1 fast putting thread, 1 fast receiving
@@ -770,7 +797,7 @@ TEST(queue_api, bounded_queue_multi_blocking_put2threads) {
     get_params.timeout = 10s;
     cut.clear();
     run_put2threads_test(
-        cut, put_params, get_params,
+        cut, put_params, get_params, range,
         "1 slow putting thread, 1 fast putting thread, 1 fast receiving");
 
     // 2 slow putting threads, 1 fast receiving
@@ -778,7 +805,7 @@ TEST(queue_api, bounded_queue_multi_blocking_put2threads) {
     put_params[1].max_exec_time = 10s;
     put_params[1].num_items = 50;
     cut.clear();
-    run_put2threads_test(cut, put_params, get_params,
+    run_put2threads_test(cut, put_params, get_params, range,
                          "2 slow putting threads, 1 fast receiving");
 
     // 2 fast putting threads, 1 slow receiving thread
@@ -789,12 +816,74 @@ TEST(queue_api, bounded_queue_multi_blocking_put2threads) {
     get_params.sleep_period = 100ms;
     get_params.timeout = 10s;
     cut.clear();
-    run_put2threads_test(cut, put_params, get_params,
+    run_put2threads_test(cut, put_params, get_params, range,
                          "2 fast putting threads, 1 slow receiving thread");
 
     // 1 slow putting thread, 1 fast putting thread, 1 slow receiving thread
     put_params[0].sleep_period = 50ms;
-    run_put2threads_test(cut, put_params, get_params,
+    run_put2threads_test(cut, put_params, get_params, range,
+                         "1 slow putting thread, 1 fast putting thread, 1 slow "
+                         "receiving thread");
+}
+
+TEST(queue_api, bounded_queue_single_overwriting_put2threads) {
+    ares::bounded_queue<int, 1, true> cut;
+    std::array<ThreadPutParams, 2> put_params = {{
+        {100, 1s, 0ms, 100ms},
+        {100, 1s, 0ms, 100ms},
+    }};
+
+    ThreadGetParams get_params = {
+        .timeout = 3s,
+        .sleep_period = 0ms,
+    };
+
+    Range range{190, 200};
+
+    // basic 2 threads putting, 1 receiving
+    run_put2threads_test(cut, put_params, get_params, range,
+                         "basic 2 threads putting, 1 receiving");
+
+    // 1 slow putting thread, 1 fast putting thread, 1 fast receiving
+    put_params[0].sleep_period = 50ms;
+    put_params[0].max_exec_time = 10s;
+    put_params[0].num_items = 50;
+    get_params.timeout = 10s;
+    cut.clear();
+    range.upper_bound = 150;
+    range.lower_bound = 145;
+    run_put2threads_test(
+        cut, put_params, get_params, range,
+        "1 slow putting thread, 1 fast putting thread, 1 fast receiving");
+
+    // 2 slow putting threads, 1 fast receiving
+    put_params[1].sleep_period = 50ms;
+    put_params[1].max_exec_time = 10s;
+    put_params[1].num_items = 50;
+    cut.clear();
+    range.lower_bound = 100;
+    range.upper_bound = 100;
+    run_put2threads_test(cut, put_params, get_params, range,
+                         "2 slow putting threads, 1 fast receiving");
+
+    // 2 fast putting threads, 1 slow receiving thread
+    put_params[0].sleep_period = 0ms;
+    put_params[0].max_exec_time = 10s;
+    put_params[1].sleep_period = 0ms;
+    put_params[1].max_exec_time = 10s;
+    get_params.sleep_period = 100ms;
+    get_params.timeout = 10s;
+    cut.clear();
+    range.lower_bound = 40;
+    range.upper_bound = 60;
+    run_put2threads_test(cut, put_params, get_params, range,
+                         "2 fast putting threads, 1 slow receiving thread");
+
+    // 1 slow putting thread, 1 fast putting thread, 1 slow receiving thread
+    put_params[0].sleep_period = 100ms;
+    range.lower_bound = 50;
+    range.upper_bound = 75;
+    run_put2threads_test(cut, put_params, get_params, range,
                          "1 slow putting thread, 1 fast putting thread, 1 slow "
                          "receiving thread");
 }
