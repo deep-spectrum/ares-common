@@ -887,3 +887,65 @@ TEST(queue_api, bounded_queue_single_overwriting_put2threads) {
                          "1 slow putting thread, 1 fast putting thread, 1 slow "
                          "receiving thread");
 }
+
+TEST(queue_api, bounded_queue_multi_overwriting_put2threads) {
+    ares::bounded_queue<int, 3, true> cut;
+    std::array<ThreadPutParams, 2> put_params = {{
+        {100, 1s, 0ms, 100ms},
+        {100, 1s, 0ms, 100ms},
+    }};
+
+    ThreadGetParams get_params = {
+        .timeout = 3s,
+        .sleep_period = 0ms,
+    };
+
+    Range range{190, 200};
+
+    // basic 2 threads putting, 1 receiving
+    run_put2threads_test(cut, put_params, get_params, range,
+                         "basic 2 threads putting, 1 receiving");
+
+    // 1 slow putting thread, 1 fast putting thread, 1 fast receiving
+    put_params[0].sleep_period = 50ms;
+    put_params[0].max_exec_time = 10s;
+    put_params[0].num_items = 50;
+    get_params.timeout = 10s;
+    cut.clear();
+    range.upper_bound = 150;
+    range.lower_bound = 145;
+    run_put2threads_test(
+        cut, put_params, get_params, range,
+        "1 slow putting thread, 1 fast putting thread, 1 fast receiving");
+
+    // 2 slow putting threads, 1 fast receiving
+    put_params[1].sleep_period = 50ms;
+    put_params[1].max_exec_time = 10s;
+    put_params[1].num_items = 50;
+    cut.clear();
+    range.lower_bound = 100;
+    range.upper_bound = 100;
+    run_put2threads_test(cut, put_params, get_params, range,
+                         "2 slow putting threads, 1 fast receiving");
+
+    // 2 fast putting threads, 1 slow receiving thread
+    put_params[0].sleep_period = 0ms;
+    put_params[0].max_exec_time = 10s;
+    put_params[1].sleep_period = 0ms;
+    put_params[1].max_exec_time = 10s;
+    get_params.sleep_period = 100ms;
+    get_params.timeout = 10s;
+    cut.clear();
+    range.lower_bound = 40;
+    range.upper_bound = 60;
+    run_put2threads_test(cut, put_params, get_params, range,
+                         "2 fast putting threads, 1 slow receiving thread");
+
+    // 1 slow putting thread, 1 fast putting thread, 1 slow receiving thread
+    put_params[0].sleep_period = 100ms;
+    range.lower_bound = 50;
+    range.upper_bound = 75;
+    run_put2threads_test(cut, put_params, get_params, range,
+                         "1 slow putting thread, 1 fast putting thread, 1 slow "
+                         "receiving thread");
+}
