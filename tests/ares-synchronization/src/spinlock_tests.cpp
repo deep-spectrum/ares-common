@@ -14,6 +14,8 @@
 
 using namespace std::chrono_literals;
 
+constexpr size_t maximum_tries = 10000;
+
 TEST(spinlock_api, test_spinlock_basic) {
     ares::SpinLock l;
 
@@ -54,11 +56,12 @@ static void bounce_once(ares::SpinLock &lock, BounceLockParams params,
                         BounceLockResults &results, BounceLockState &state) {
     bool locked = false;
 
-    for (size_t i = 0; i < 10000; i++) {
+    for (size_t i = 0; i < maximum_tries; i++) {
         if (params.try_lock) {
             bool ret = lock.try_lock();
             if (!ret) {
                 results.trylock_failures = results.trylock_failures + 1;
+                busy_wait(1us);
                 continue;
             }
             results.trylock_successes = results.trylock_successes + 1;
@@ -79,7 +82,11 @@ static void bounce_once(ares::SpinLock &lock, BounceLockParams params,
         return;
     }
 
-    EXPECT_TRUE(locked) << "Other CPU did not get lock in 10000 tries";
+    EXPECT_TRUE(locked) << "Other CPU did not get lock in " << maximum_tries
+                        << " tries";
+    if (!locked) {
+        return;
+    }
 
     state.owner = params.id;
 
@@ -91,13 +98,8 @@ static void bounce_once(ares::SpinLock &lock, BounceLockParams params,
     lock.unlock();
 }
 
-static void cpu1_fn(ares::SpinLock &cut, BounceLockResults &results,
-                    BounceLockState &state) {
-    BounceLockParams params = {
-        .id = 4321,
-        .try_lock = false,
-    };
-
+static void cpu1_fn(ares::SpinLock &cut, BounceLockParams params,
+                    BounceLockResults &results, BounceLockState &state) {
     while (!state.done) {
         bounce_once(cut, params, results, state);
 
@@ -115,10 +117,16 @@ TEST(spinlock_api, test_spinlock_bounce) {
         .try_lock = false,
     };
 
+    BounceLockParams params_cpu1 = {
+        .id = 4321,
+        .try_lock = false,
+    };
+
     BounceLockResults results;
     BounceLockState state;
 
-    std::thread t(cpu1_fn, std::ref(cut), std::ref(results), std::ref(state));
+    std::thread t(cpu1_fn, std::ref(cut), params_cpu1, std::ref(results),
+                  std::ref(state));
     busy_wait(10us);
 
     for (size_t i = 0; i < 10000; i++) {
@@ -131,4 +139,39 @@ TEST(spinlock_api, test_spinlock_bounce) {
 
     state.done = true;
     t.join();
+}
+
+TEST(spinlock_api, test_spinlock_trylock) {
+    ares::SpinLock cut;
+
+    BounceLockParams params = {
+        .id = 1234,
+        .try_lock = true,
+    };
+
+    BounceLockParams params_cpu1 = {
+        .id = 4321,
+        .try_lock = true,
+    };
+
+    BounceLockResults results;
+    BounceLockState state;
+
+    std::thread t(cpu1_fn, std::ref(cut), params_cpu1, std::ref(results),
+                  std::ref(state));
+    busy_wait(10us);
+
+    for (size_t i = 0; i < 10000; i++) {
+        bounce_once(cut, params, results, state);
+
+        if (HasFailure()) {
+            break;
+        }
+    }
+
+    state.done = true;
+    t.join();
+
+    ASSERT_NE(results.trylock_failures, 0);
+    ASSERT_NE(results.trylock_successes, 0);
 }

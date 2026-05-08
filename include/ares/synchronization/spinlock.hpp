@@ -35,7 +35,10 @@ class SpinLock {
      * Attempt to lock the spinlock.
      * @return `true` if the spinlock was locked. `false` otherwise.
      */
-    bool try_lock() { return _locked.test_and_set(std::memory_order_acquire); }
+    bool try_lock() {
+        bool ret = _locked.test_and_set(std::memory_order_acquire);
+        return !ret;
+    }
 
     /**
      * Unlock the spinlock.
