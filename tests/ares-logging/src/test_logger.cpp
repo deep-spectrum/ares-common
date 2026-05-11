@@ -26,3 +26,27 @@ TEST(logger_api, init) {
     ASSERT_EQ(cut4.get_log_level(), Logger::LOG_LEVEL_CRITICAL);
     ASSERT_EQ(cut5.get_log_level(), Logger::LOG_LEVEL_OFF);
 }
+
+TEST(logger_api, logger_set_level) {
+    Logger cut("cut", Logger::LOG_LEVEL_OFF);
+
+    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_OFF);
+
+    cut.set_log_level(Logger::LOG_LEVEL_DBG);
+    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_DBG);
+
+    cut.set_log_level(Logger::LOG_LEVEL_INFO);
+    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_INFO);
+
+    cut.set_log_level(Logger::LOG_LEVEL_WARN);
+    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_WARN);
+
+    cut.set_log_level(Logger::LOG_LEVEL_ERROR);
+    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_ERROR);
+
+    cut.set_log_level(Logger::LOG_LEVEL_CRITICAL);
+    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_CRITICAL);
+
+    cut.set_log_level(Logger::LOG_LEVEL_OFF);
+    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_OFF);
+}
