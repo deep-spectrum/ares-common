@@ -34,6 +34,8 @@ else ()
     add_definitions(-DSKIP_RT_TESTS)
 endif ()
 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../test-helpers test-helpers)
+
 ################################################
 # Add test executables here
 ################################################
@@ -46,9 +48,10 @@ target_link_libraries(spinlock_test GTest::gtest_main)
 
 add_executable(
         semaphore_test
-        src/semaphore_tests.cpp src/thread_utils.cpp
+        src/semaphore_tests.cpp
 )
-target_link_libraries(semaphore_test GTest::gtest_main)
+add_dependencies(semaphore_test ares_test_helpers)
+target_link_libraries(semaphore_test GTest::gtest_main ares_test_helpers)
 
 ################################################
 # Discover tests here
