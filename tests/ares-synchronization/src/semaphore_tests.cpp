@@ -179,6 +179,10 @@ TEST(semaphore_api, sem_take_multiple) {
     ares::semaphore<> prio_sems[4] = {ares::semaphore(0), ares::semaphore(0),
                                       ares::semaphore(0), ares::semaphore(0)};
 
+#if defined(SKIP_RT_TESTS)
+    GTEST_SKIP() << "Realtime tests disabled";
+#endif
+
     for (size_t i = 0; i < 4; i++) {
         ASSERT_EQ(prio_sems[i].get_count(), 0) << "Semaphore " << i;
     }
@@ -216,6 +220,9 @@ TEST(semaphore_api, sem_take_multiple) {
     std::this_thread::sleep_for(20ms);
 
     if (error) {
+        for (auto &t: threads) {
+            t.join();
+        }
         GTEST_SKIP() << "Unable to update thread priorities";
     }
 
