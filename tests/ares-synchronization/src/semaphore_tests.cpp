@@ -220,7 +220,7 @@ TEST(semaphore_api, sem_take_multiple) {
     std::this_thread::sleep_for(20ms);
 
     if (error) {
-        for (auto &t: threads) {
+        for (auto &t : threads) {
             t.join();
         }
         GTEST_SKIP() << "Unable to update thread priorities";

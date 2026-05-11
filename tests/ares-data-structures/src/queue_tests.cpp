@@ -213,7 +213,7 @@ TEST(queue_api, queue_multithread_competition) {
     std::thread t3(wait_for_queue, std::ref(cut), LOW, std::ref(ret[2]),
                    std::ref(ready[2]), std::ref(errors[2]));
 
-    std::this_thread::sleep_for(10ms);
+    std::this_thread::sleep_for(100ms);
 
     bool error = false;
     for (size_t i = 0u; i < 3; i++) {

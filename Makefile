@@ -1,4 +1,4 @@
-EXCLUDE_DIRS := cmake-build* tests/*/build* tests/*/cmake-build*
+EXCLUDE_DIRS := cmake-build* tests/*/build* tests/*/cmake-build* tests/build test/cmake-build*
 FORMAT_EXTENSIONS := h hpp c cpp
 
 PRUNE_ARGS := $(foreach dir,$(EXCLUDE_DIRS),-path "./$(dir)" -prune -o)
