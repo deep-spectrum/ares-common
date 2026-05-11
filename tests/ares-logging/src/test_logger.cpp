@@ -430,3 +430,13 @@ TEST(logger_api, log_various_messages_off) {
     CHECK_OUTPUT(cut, "", LOG_LEVEL_OFF, "abcd: %f %d %f",
                  static_cast<double>(f), 100, d);
 }
+
+TEST(logger_api, log_runtime_switch) {
+    Logger cut("cut", Logger::LOG_LEVEL_OFF);
+
+    CHECK_OUTPUT(cut, "", LOG_LEVEL_DBG, "abcd");
+
+    cut.set_log_level(Logger::LOG_LEVEL_DBG);
+
+    CHECK_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: abcd\n", LOG_LEVEL_DBG, "abcd");
+}
