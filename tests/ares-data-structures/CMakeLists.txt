@@ -34,6 +34,8 @@ else ()
     add_definitions(-DSKIP_RT_TESTS)
 endif ()
 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../test-helpers test-helpers)
+
 ################################################
 # Add test executables here
 ################################################
@@ -46,15 +48,17 @@ target_link_libraries(slist_test GTest::gtest_main)
 
 add_executable(
         queue_test
-        src/queue_tests.cpp src/thread_utils.cpp
+        src/queue_tests.cpp
 )
-target_link_libraries(queue_test GTest::gtest_main)
+add_dependencies(queue_test ares_test_helpers)
+target_link_libraries(queue_test GTest::gtest_main ares_test_helpers)
 
 add_executable(
         bounded_queue_test
-        src/bounded_queue_tests.cpp src/thread_utils.cpp
+        src/bounded_queue_tests.cpp
 )
-target_link_libraries(bounded_queue_test GTest::gtest_main)
+add_dependencies(bounded_queue_test ares_test_helpers)
+target_link_libraries(bounded_queue_test GTest::gtest_main ares_test_helpers)
 
 ################################################
 # Discover tests here
