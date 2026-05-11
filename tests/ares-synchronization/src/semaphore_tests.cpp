@@ -308,3 +308,56 @@ TEST(semaphore_api, sem_correct_count_limit) {
         ASSERT_EQ(sem.get_count(), 0);
     }
 }
+
+template <size_t cnt1, size_t cnt2>
+static void sem_multiple_helper(ares::semaphore<cnt1> &multi_sem,
+                                ares::semaphore<cnt2> &simple_sem) {
+    EXPECT_NO_THROW(multi_sem.take());
+    simple_sem.give();
+}
+
+template <size_t cnt1, size_t cnt2>
+static std::thread
+sem_multiple_thread_helper(ares::semaphore<cnt1> &multi_sem,
+                           ares::semaphore<cnt2> &simple_sem) {
+    return std::thread(sem_multiple_helper<cnt1, cnt2>, std::ref(multi_sem),
+                       std::ref(simple_sem));
+}
+
+TEST(semaphore_api, sem_multiple_threads_wait) {
+    constexpr size_t threads_waiting = 5;
+
+    ares::semaphore<10> multi_sem(0);
+    ares::semaphore<10> simple_sem(0);
+
+    std::thread threads[threads_waiting];
+
+    for (size_t repeat_cnt = 0; repeat_cnt < 2; repeat_cnt++) {
+        for (auto &t : threads) {
+            t = sem_multiple_thread_helper(multi_sem, simple_sem);
+        }
+
+        std::this_thread::sleep_for(500ms);
+
+        for (size_t i = 0; i < threads_waiting; i++) {
+            multi_sem.give();
+        }
+
+        std::this_thread::sleep_for(500ms);
+
+        for (size_t i = 0; i < threads_waiting; i++) {
+            EXPECT_NO_THROW(simple_sem.take());
+        }
+
+        EXPECT_EQ(simple_sem.get_count(), 0);
+        EXPECT_EQ(multi_sem.get_count(), 0);
+
+        for (auto &t : threads) {
+            t.join();
+        }
+
+        if (HasFailure()) {
+            break;
+        }
+    }
+}
