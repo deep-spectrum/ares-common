@@ -284,3 +284,27 @@ cleanup:
         t.join();
     }
 }
+
+TEST(semaphore_api, sem_correct_count_limit) {
+    ares::semaphore<10> sem(0);
+
+    for (size_t i = 1; i <= 10; i++) {
+        ASSERT_NO_THROW(sem.give());
+        ASSERT_EQ(sem.get_count(), i);
+    }
+
+    for (size_t i = 0; i < 5; i++) {
+        ASSERT_THROW(sem.give(), ares::semaphore_exception);
+        ASSERT_EQ(sem.get_count(), 10);
+    }
+
+    for (ssize_t i = 9; i >= 0; i--) {
+        ASSERT_NO_THROW(sem.take(ares::no_wait));
+        ASSERT_EQ(sem.get_count(), i);
+    }
+
+    for (size_t i = 0; i < 5; i++) {
+        ASSERT_THROW(sem.take(ares::no_wait), ares::semaphore_exception);
+        ASSERT_EQ(sem.get_count(), 0);
+    }
+}
