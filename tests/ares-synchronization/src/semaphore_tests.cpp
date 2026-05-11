@@ -361,3 +361,50 @@ TEST(semaphore_api, sem_multiple_threads_wait) {
         }
     }
 }
+
+enum operation { ADD, SUB };
+
+template <size_t cnt>
+static void mutual_exclusion_test_helper(ares::semaphore<cnt> &sem,
+                                         int &critical_var, operation op) {
+    for (size_t i = 0; i < 1000; i++) {
+        EXPECT_NO_THROW(sem.take());
+
+        int tmp = critical_var;
+
+        if (op == ADD) {
+            critical_var += 1;
+            EXPECT_EQ(critical_var, (tmp + 1));
+        } else if (op == SUB) {
+            critical_var -= 1;
+            EXPECT_EQ(critical_var, (tmp - 1));
+        }
+
+        sem.give();
+    }
+}
+
+template <size_t cnt>
+static std::thread mutual_exclusion_thread_helper(ares::semaphore<cnt> &sem,
+                                                  int &critical_var,
+                                                  operation op) {
+    return std::thread(mutual_exclusion_test_helper<cnt>, std::ref(sem),
+                       std::ref(critical_var), op);
+}
+
+TEST(semaphore_api, mutual_exclusion) {
+    ares::semaphore<10> sem(0);
+
+    int crit_val = 0;
+
+    std::thread t1 = mutual_exclusion_thread_helper(sem, crit_val, ADD);
+    std::thread t2 = mutual_exclusion_thread_helper(sem, crit_val, SUB);
+
+    std::this_thread::sleep_for(100ms);
+
+    sem.give();
+    t1.join();
+    t2.join();
+
+    ASSERT_EQ(crit_val, 0);
+}
