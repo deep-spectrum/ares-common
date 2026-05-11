@@ -440,3 +440,17 @@ TEST(logger_api, log_runtime_switch) {
 
     CHECK_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: abcd\n", LOG_LEVEL_DBG, "abcd");
 }
+
+TEST(logger_api, log_hexdump_output_dbg) {}
+
+TEST(logger_api, log_hexdump_output_info) {}
+
+TEST(logger_api, log_hexdump_output_warn) {}
+
+TEST(logger_api, log_hexdump_output_error) {}
+
+TEST(logger_api, log_hexdump_output_critical) {}
+
+TEST(logger_api, log_hexdump_output_off) {}
+
+TEST(logger_api, log_hexdump_runtime_switch) {}
