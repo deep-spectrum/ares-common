@@ -1,0 +1,22 @@
+/**
+ * @file thread_utils.hpp
+ *
+ * @brief
+ *
+ * @date 5/7/26
+ *
+ * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
+ */
+
+#ifndef ARES_THREAD_UTILS_H
+#define ARES_THREAD_UTILS_H
+
+enum thread_prio {
+    HIGH,
+    MED,
+    LOW,
+};
+
+int change_thread_prio(thread_prio prio);
+
+#endif // ARES_THREAD_UTILS_H

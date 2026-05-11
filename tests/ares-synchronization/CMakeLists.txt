@@ -46,7 +46,7 @@ target_link_libraries(spinlock_test GTest::gtest_main)
 
 add_executable(
         semaphore_test
-        src/semaphore_tests.cpp
+        src/semaphore_tests.cpp src/thread_utils.cpp
 )
 target_link_libraries(semaphore_test GTest::gtest_main)
 
