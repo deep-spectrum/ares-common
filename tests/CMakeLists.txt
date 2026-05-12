@@ -6,6 +6,9 @@ add_subdirectory(ares-data-structures)
 add_subdirectory(ares-logging)
 add_subdirectory(ares-synchronization)
 
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ares-common/pyutils"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/ares-common/")
+
 enable_testing()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -25,7 +28,10 @@ execute_process(
         COMMAND "${VENV_PYTHON}" -m pip install "${CMAKE_CURRENT_SOURCE_DIR}/ares-common/pyutils"
 )
 
-add_test(
-        NAME pyutils-tests
-        COMMAND "${VENV_PYTHON}" -m pytest "${CMAKE_CURRENT_SOURCE_DIR}/ares-common/pyutils/tests"
+include(cmake/pytest.cmake)
+discover_pytest_tests(
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/ares-common/pyutils/tests"
+        INTERPRETER ${VENV_PYTHON}
+        PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/ares-common/pyutils"
+        TEST_PREFIX "pyutils_"
 )
