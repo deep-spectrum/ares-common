@@ -12,6 +12,13 @@
 #include <ares/util.h>
 #include <gtest/gtest.h>
 
+#define RESET_COLOR "\033[0m"
+#define DBG_COLOR "\033[0m"
+#define INF_COLOR "\033[38;2;39;163;105m"
+#define WARN_COLOR "\033[38;2;163;115;76m"
+#define ERR_COLOR "\033[38;2;193;29;40m"
+#define CRIT_COLOR "\033[38;2;117;80;123m"
+
 TEST(logger_api, init) {
     Logger cut0("cut0", Logger::LOG_LEVEL_DBG);
     Logger cut1("cut1", Logger::LOG_LEVEL_INFO);
@@ -441,16 +448,732 @@ TEST(logger_api, log_runtime_switch) {
     CHECK_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: abcd\n", LOG_LEVEL_DBG, "abcd");
 }
 
-TEST(logger_api, log_hexdump_output_dbg) {}
+#define Z_LOG_HEX(logger, expected, level, msg, data, len)                     \
+    do {                                                                       \
+        testing::internal::CaptureStdout();                                    \
+        logger.log_hexdump(Logger::level, msg, data, len);                     \
+        std::string output = testing::internal::GetCapturedStdout();           \
+        ASSERT_EQ(output, expected);                                           \
+    } while (false)
 
-TEST(logger_api, log_hexdump_output_info) {}
+#define CHECK_HEX_OUTPUT(logger, expected, level, msg, data, len)              \
+    Z_LOG_HEX(logger, expected, level, msg, data, len)
 
-TEST(logger_api, log_hexdump_output_warn) {}
+TEST(logger_api, log_hexdump_output_dbg) {
+    Logger cut("cut", Logger::LOG_LEVEL_DBG);
+    std::vector<uint8_t> zero;
+    std::vector<uint8_t> single = { 0x00 };
+    std::vector<uint8_t> four = { 0x00, 0x01, 0x02, 0x03 };
+    std::vector<uint8_t> five = { 0x00, 0x01, 0x02, 0x03, 0x04 };
+    std::vector<uint8_t> eight = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    std::vector<uint8_t> nine = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+    std::vector<uint8_t> v17 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 };
 
-TEST(logger_api, log_hexdump_output_error) {}
+    // No bytes
+    CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n\n", LOG_LEVEL_DBG, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n\n", LOG_LEVEL_INFO, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n\n", LOG_LEVEL_WARN, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n\n", LOG_LEVEL_ERROR, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n\n", LOG_LEVEL_CRITICAL, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", zero, 0);
 
-TEST(logger_api, log_hexdump_output_critical) {}
+    // 1 byte
+    CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n"
+                          "           00                          |. \n", LOG_LEVEL_DBG, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00                          |. \n", LOG_LEVEL_INFO, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00                          |. \n", LOG_LEVEL_WARN, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00                          |. \n", LOG_LEVEL_ERROR, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00                          |. \n", LOG_LEVEL_CRITICAL, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", single, 1);
 
-TEST(logger_api, log_hexdump_output_off) {}
+    // 4 bytes
+    CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n"
+                          "           00 01 02 03                 |.... \n", LOG_LEVEL_DBG, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03                 |.... \n", LOG_LEVEL_INFO, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03                 |.... \n", LOG_LEVEL_WARN, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03                 |.... \n", LOG_LEVEL_ERROR, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03                 |.... \n", LOG_LEVEL_CRITICAL, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", four, 4);
 
-TEST(logger_api, log_hexdump_runtime_switch) {}
+    // 5 bytes
+    CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n"
+                          "           00 01 02 03   04            |.... .\n", LOG_LEVEL_DBG, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04            |.... .\n", LOG_LEVEL_INFO, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04            |.... .\n", LOG_LEVEL_WARN, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04            |.... .\n", LOG_LEVEL_ERROR, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04            |.... .\n", LOG_LEVEL_CRITICAL, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", five, 5);
+
+    // 8 bytes
+    CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_DBG, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_INFO, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_WARN, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_ERROR, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_CRITICAL, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", eight, 8);
+
+    // 9 bytes
+    CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08                          |. \n", LOG_LEVEL_DBG, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08                          |. \n", LOG_LEVEL_INFO, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08                          |. \n", LOG_LEVEL_WARN, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08                          |. \n", LOG_LEVEL_ERROR, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08                          |. \n", LOG_LEVEL_CRITICAL, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", nine, 9);
+
+    // 17 bytes
+    CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "           10                          |. \n", LOG_LEVEL_DBG, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_INFO, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_WARN, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "           10                          |. \n", LOG_LEVEL_ERROR, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_CRITICAL, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 17);
+
+    // 16 bytes (v17 with size set to 16)
+    CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_DBG, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_INFO, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_WARN, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_ERROR, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_CRITICAL, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 16);
+
+    // 17 bytes, size set to some larger number
+    CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "           10                          |. \n", LOG_LEVEL_DBG, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_INFO, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_WARN, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "           10                          |. \n", LOG_LEVEL_ERROR, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_CRITICAL, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, (v17.size() + 32));
+}
+
+TEST(logger_api, log_hexdump_output_info) {
+        Logger cut("cut", Logger::LOG_LEVEL_INFO);
+    std::vector<uint8_t> zero;
+    std::vector<uint8_t> single = { 0x00 };
+    std::vector<uint8_t> four = { 0x00, 0x01, 0x02, 0x03 };
+    std::vector<uint8_t> five = { 0x00, 0x01, 0x02, 0x03, 0x04 };
+    std::vector<uint8_t> eight = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    std::vector<uint8_t> nine = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+    std::vector<uint8_t> v17 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 };
+
+    // No bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n\n", LOG_LEVEL_INFO, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n\n", LOG_LEVEL_WARN, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n\n", LOG_LEVEL_ERROR, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n\n", LOG_LEVEL_CRITICAL, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", zero, 0);
+
+    // 1 byte
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00                          |. \n", LOG_LEVEL_INFO, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00                          |. \n", LOG_LEVEL_WARN, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00                          |. \n", LOG_LEVEL_ERROR, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00                          |. \n", LOG_LEVEL_CRITICAL, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", single, 1);
+
+    // 4 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03                 |.... \n", LOG_LEVEL_INFO, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03                 |.... \n", LOG_LEVEL_WARN, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03                 |.... \n", LOG_LEVEL_ERROR, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03                 |.... \n", LOG_LEVEL_CRITICAL, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", four, 4);
+
+    // 5 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04            |.... .\n", LOG_LEVEL_INFO, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04            |.... .\n", LOG_LEVEL_WARN, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04            |.... .\n", LOG_LEVEL_ERROR, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04            |.... .\n", LOG_LEVEL_CRITICAL, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", five, 5);
+
+    // 8 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_INFO, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_WARN, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_ERROR, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_CRITICAL, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", eight, 8);
+
+    // 9 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08                          |. \n", LOG_LEVEL_INFO, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08                          |. \n", LOG_LEVEL_WARN, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08                          |. \n", LOG_LEVEL_ERROR, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08                          |. \n", LOG_LEVEL_CRITICAL, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", nine, 9);
+
+    // 17 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_INFO, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_WARN, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "           10                          |. \n", LOG_LEVEL_ERROR, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_CRITICAL, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 17);
+
+    // 16 bytes (v17 with size set to 16)
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_INFO, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_WARN, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_ERROR, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_CRITICAL, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 16);
+
+    // 17 bytes, size set to some larger number
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_INFO, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_WARN, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "           10                          |. \n", LOG_LEVEL_ERROR, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_CRITICAL, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, (v17.size() + 32));
+}
+
+TEST(logger_api, log_hexdump_output_warn) {
+            Logger cut("cut", Logger::LOG_LEVEL_WARN);
+    std::vector<uint8_t> zero;
+    std::vector<uint8_t> single = { 0x00 };
+    std::vector<uint8_t> four = { 0x00, 0x01, 0x02, 0x03 };
+    std::vector<uint8_t> five = { 0x00, 0x01, 0x02, 0x03, 0x04 };
+    std::vector<uint8_t> eight = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    std::vector<uint8_t> nine = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+    std::vector<uint8_t> v17 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 };
+
+    // No bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n\n", LOG_LEVEL_WARN, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n\n", LOG_LEVEL_ERROR, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n\n", LOG_LEVEL_CRITICAL, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", zero, 0);
+
+    // 1 byte
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00                          |. \n", LOG_LEVEL_WARN, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00                          |. \n", LOG_LEVEL_ERROR, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00                          |. \n", LOG_LEVEL_CRITICAL, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", single, 1);
+
+    // 4 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03                 |.... \n", LOG_LEVEL_WARN, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03                 |.... \n", LOG_LEVEL_ERROR, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03                 |.... \n", LOG_LEVEL_CRITICAL, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", four, 4);
+
+    // 5 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04            |.... .\n", LOG_LEVEL_WARN, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04            |.... .\n", LOG_LEVEL_ERROR, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04            |.... .\n", LOG_LEVEL_CRITICAL, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", five, 5);
+
+    // 8 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_WARN, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_ERROR, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_CRITICAL, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", eight, 8);
+
+    // 9 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08                          |. \n", LOG_LEVEL_WARN, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08                          |. \n", LOG_LEVEL_ERROR, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08                          |. \n", LOG_LEVEL_CRITICAL, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", nine, 9);
+
+    // 17 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_WARN, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "           10                          |. \n", LOG_LEVEL_ERROR, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_CRITICAL, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 17);
+
+    // 16 bytes (v17 with size set to 16)
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_WARN, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_ERROR, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_CRITICAL, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 16);
+
+    // 17 bytes, size set to some larger number
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;163;115;76m[WARN]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_WARN, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "           10                          |. \n", LOG_LEVEL_ERROR, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_CRITICAL, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, (v17.size() + 32));
+}
+
+TEST(logger_api, log_hexdump_output_error) {
+                Logger cut("cut", Logger::LOG_LEVEL_ERROR);
+    std::vector<uint8_t> zero;
+    std::vector<uint8_t> single = { 0x00 };
+    std::vector<uint8_t> four = { 0x00, 0x01, 0x02, 0x03 };
+    std::vector<uint8_t> five = { 0x00, 0x01, 0x02, 0x03, 0x04 };
+    std::vector<uint8_t> eight = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    std::vector<uint8_t> nine = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+    std::vector<uint8_t> v17 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 };
+
+    // No bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n\n", LOG_LEVEL_ERROR, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n\n", LOG_LEVEL_CRITICAL, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", zero, 0);
+
+    // 1 byte
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00                          |. \n", LOG_LEVEL_ERROR, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00                          |. \n", LOG_LEVEL_CRITICAL, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", single, 1);
+
+    // 4 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03                 |.... \n", LOG_LEVEL_ERROR, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03                 |.... \n", LOG_LEVEL_CRITICAL, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", four, 4);
+
+    // 5 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04            |.... .\n", LOG_LEVEL_ERROR, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04            |.... .\n", LOG_LEVEL_CRITICAL, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", five, 5);
+
+    // 8 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_ERROR, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_CRITICAL, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", eight, 8);
+
+    // 9 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08                          |. \n", LOG_LEVEL_ERROR, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08                          |. \n", LOG_LEVEL_CRITICAL, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", nine, 9);
+
+    // 17 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "           10                          |. \n", LOG_LEVEL_ERROR, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_CRITICAL, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 17);
+
+    // 16 bytes (v17 with size set to 16)
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_ERROR, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_CRITICAL, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 16);
+
+    // 17 bytes, size set to some larger number
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;193;29;40m[ERR]\033[0m cut: foo\n"
+                          "           00 01 02 03   04 05 06 07   |.... ....\n"
+                          "           08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "           10                          |. \n", LOG_LEVEL_ERROR, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_CRITICAL, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, (v17.size() + 32));
+}
+
+TEST(logger_api, log_hexdump_output_critical) {
+                    Logger cut("cut", Logger::LOG_LEVEL_CRITICAL);
+    std::vector<uint8_t> zero;
+    std::vector<uint8_t> single = { 0x00 };
+    std::vector<uint8_t> four = { 0x00, 0x01, 0x02, 0x03 };
+    std::vector<uint8_t> five = { 0x00, 0x01, 0x02, 0x03, 0x04 };
+    std::vector<uint8_t> eight = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    std::vector<uint8_t> nine = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+    std::vector<uint8_t> v17 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 };
+
+    // No bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n\n", LOG_LEVEL_CRITICAL, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", zero, 0);
+
+    // 1 byte
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00                          |. \n", LOG_LEVEL_CRITICAL, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", single, 1);
+
+    // 4 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03                 |.... \n", LOG_LEVEL_CRITICAL, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", four, 4);
+
+    // 5 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04            |.... .\n", LOG_LEVEL_CRITICAL, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", five, 5);
+
+    // 8 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n", LOG_LEVEL_CRITICAL, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", eight, 8);
+
+    // 9 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08                          |. \n", LOG_LEVEL_CRITICAL, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", nine, 9);
+
+    // 17 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_CRITICAL, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 17);
+
+    // 16 bytes (v17 with size set to 16)
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n", LOG_LEVEL_CRITICAL, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 16);
+
+    // 17 bytes, size set to some larger number
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "\033[38;2;117;80;123m[CRIT]\033[0m cut: foo\n"
+                          "            00 01 02 03   04 05 06 07   |.... ....\n"
+                          "            08 09 0a 0b   0c 0d 0e 0f   |.... ....\n"
+                          "            10                          |. \n", LOG_LEVEL_CRITICAL, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, (v17.size() + 32));
+}
+
+TEST(logger_api, log_hexdump_output_off) {
+                        Logger cut("cut", Logger::LOG_LEVEL_OFF);
+    std::vector<uint8_t> zero;
+    std::vector<uint8_t> single = { 0x00 };
+    std::vector<uint8_t> four = { 0x00, 0x01, 0x02, 0x03 };
+    std::vector<uint8_t> five = { 0x00, 0x01, 0x02, 0x03, 0x04 };
+    std::vector<uint8_t> eight = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    std::vector<uint8_t> nine = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+    std::vector<uint8_t> v17 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 };
+
+    // No bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_CRITICAL, "foo", zero, 0);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", zero, 0);
+
+    // 1 byte
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_CRITICAL, "foo", single, 1);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", single, 1);
+
+    // 4 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_CRITICAL, "foo", four, 4);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", four, 4);
+
+    // 5 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_CRITICAL, "foo", five, 5);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", five, 5);
+
+    // 8 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_CRITICAL, "foo", eight, 8);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", eight, 8);
+
+    // 9 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_CRITICAL, "foo", nine, 9);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", nine, 9);
+
+    // 17 bytes
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_CRITICAL, "foo", v17, 17);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 17);
+
+    // 16 bytes (v17 with size set to 16)
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_CRITICAL, "foo", v17, 16);
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, 16);
+
+    // 17 bytes, size set to some larger number
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_INFO, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_WARN, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_ERROR, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_CRITICAL, "foo", v17, (v17.size() + 32));
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_OFF, "foo", v17, (v17.size() + 32));
+}
+
+TEST(logger_api, log_hexdump_runtime_switch) {
+    Logger cut("cut", Logger::LOG_LEVEL_OFF);
+    std::vector<uint8_t> zero;
+
+    CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", zero, 0);
+
+    cut.set_log_level(Logger::LOG_LEVEL_DBG);
+
+    CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n\n", LOG_LEVEL_DBG, "foo", zero, 0);
+}
