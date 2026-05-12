@@ -37,9 +37,17 @@ add_executable(
 )
 target_link_libraries(logger_test GTest::gtest_main)
 
+add_executable(
+        log_test
+        src/test_logging_macros.cpp
+        ${LOG_LIB_SRC}
+)
+target_link_libraries(log_test GTest::gtest_main)
+
 ################################################
 # Discover tests here
 ################################################
 
 include(GoogleTest)
 gtest_discover_tests(logger_test)
+gtest_discover_tests(log_test)
