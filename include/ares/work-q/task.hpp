@@ -54,8 +54,13 @@ class Task {
     /**
      * Constructor.
      * @param[in] handler The task handler.
+     * @throws TaskException if the handler is nullptr
      */
-    explicit Task(std::function<Signature> handler) : handler(handler) {}
+    explicit Task(std::function<Signature> handler) : handler(handler) {
+        if (handler == nullptr) {
+            throw TaskException("Task handler cannot be `nullptr`");
+        }
+    }
 
     /**
      * Destructor.
