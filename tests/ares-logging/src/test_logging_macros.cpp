@@ -82,3 +82,104 @@ TEST(logger_api, save_and_restore) {
     ASSERT_EQ(LOG_MODULE_CURRENT_LEVEL, ares::Logger::LOG_LEVEL_INFO);
     ASSERT_EQ(LOG_MODULE_SAVED_LEVEL, ares::Logger::LOG_LEVEL_WARN);
 }
+
+#define CHECK_OUTPUT(LOG_FUNC, expected, input, ...)                           \
+    do {                                                                       \
+        testing::internal::CaptureStdout();                                    \
+        LOG_FUNC(input, __VA_ARGS__);                                          \
+        std::string output = testing::internal::GetCapturedStdout();           \
+        ASSERT_EQ(output, expected);                                           \
+    } while (false)
+
+TEST(logger_api, log_dbg) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+
+    CHECK_OUTPUT(LOG_DBG, "\033[0m[DBG]\033[0m test: \n", "");
+    CHECK_OUTPUT(LOG_DBG, "\033[0m[DBG]\033[0m test: abcd\n", "abcd");
+
+    const char *foo = "foo";
+    unsigned long long ull = 0x1122334455667799;
+    long long ll = -12313213214454545;
+    int8_t i = -5;
+
+    CHECK_OUTPUT(LOG_DBG,
+                 "\033[0m[DBG]\033[0m test: abcd, foo: -12313213214454545 "
+                 "1234605616436508569 -5\n",
+                 "abcd, %s: %lld %llu %hhd", foo, ll, ull, i);
+}
+
+TEST(logger_api, log_info) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+
+    CHECK_OUTPUT(LOG_INF, "\033[38;2;39;163;105m[INFO]\033[0m test: \n", "");
+    CHECK_OUTPUT(LOG_INF, "\033[38;2;39;163;105m[INFO]\033[0m test: abcd\n",
+                 "abcd");
+
+    const char *foo = "foo";
+    unsigned long long ull = 0x1122334455667799;
+    long long ll = -12313213214454545;
+    int8_t i = -5;
+
+    CHECK_OUTPUT(LOG_INF,
+                 "\033[38;2;39;163;105m[INFO]\033[0m test: abcd, foo: "
+                 "-12313213214454545 "
+                 "1234605616436508569 -5\n",
+                 "abcd, %s: %lld %llu %hhd", foo, ll, ull, i);
+}
+
+TEST(logger_api, log_warn) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+
+    CHECK_OUTPUT(LOG_WRN, "\033[38;2;163;115;76m[WARN]\033[0m test: \n", "");
+    CHECK_OUTPUT(LOG_WRN, "\033[38;2;163;115;76m[WARN]\033[0m test: abcd\n",
+                 "abcd");
+
+    const char *foo = "foo";
+    unsigned long long ull = 0x1122334455667799;
+    long long ll = -12313213214454545;
+    int8_t i = -5;
+
+    CHECK_OUTPUT(LOG_WRN,
+                 "\033[38;2;163;115;76m[WARN]\033[0m test: abcd, foo: "
+                 "-12313213214454545 "
+                 "1234605616436508569 -5\n",
+                 "abcd, %s: %lld %llu %hhd", foo, ll, ull, i);
+}
+
+TEST(logger_api, log_error) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+
+    CHECK_OUTPUT(LOG_ERR, "\033[38;2;193;29;40m[ERR]\033[0m test: \n", "");
+    CHECK_OUTPUT(LOG_ERR, "\033[38;2;193;29;40m[ERR]\033[0m test: abcd\n",
+                 "abcd");
+
+    const char *foo = "foo";
+    unsigned long long ull = 0x1122334455667799;
+    long long ll = -12313213214454545;
+    int8_t i = -5;
+
+    CHECK_OUTPUT(
+        LOG_ERR,
+        "\033[38;2;193;29;40m[ERR]\033[0m test: abcd, foo: -12313213214454545 "
+        "1234605616436508569 -5\n",
+        "abcd, %s: %lld %llu %hhd", foo, ll, ull, i);
+}
+
+TEST(logger_api, log_crit) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+
+    CHECK_OUTPUT(LOG_CRIT, "\033[38;2;117;80;123m[CRIT]\033[0m test: \n", "");
+    CHECK_OUTPUT(LOG_CRIT, "\033[38;2;117;80;123m[CRIT]\033[0m test: abcd\n",
+                 "abcd");
+
+    const char *foo = "foo";
+    unsigned long long ull = 0x1122334455667799;
+    long long ll = -12313213214454545;
+    int8_t i = -5;
+
+    CHECK_OUTPUT(LOG_CRIT,
+                 "\033[38;2;117;80;123m[CRIT]\033[0m test: abcd, foo: "
+                 "-12313213214454545 "
+                 "1234605616436508569 -5\n",
+                 "abcd, %s: %lld %llu %hhd", foo, ll, ull, i);
+}
