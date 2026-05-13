@@ -19,6 +19,31 @@
 #include <thread>
 #include <utility>
 
+namespace ares {
+/**
+ * @class TaskException
+ * @brief Exception class for task related errors.
+ */
+class TaskException : std::exception {
+  public:
+    /**
+     * Constructor.
+     * @param msg The exception message.
+     */
+    explicit TaskException(const char *msg) : _msg(msg) {}
+
+    /**
+     * The error message or reason.
+     * @return The error message.
+     */
+    [[nodiscard]] const char *what() const noexcept override {
+        return _msg.c_str();
+    }
+
+  private:
+    std::string _msg;
+};
+
 /**
  * @class Task
  * @tparam Signature The function signature for the task to execute.
@@ -230,5 +255,6 @@ void Task<Signature>::init_task(Args &&...args) {
     task = std::packaged_task<void()>(std::move(bound_task));
     future = task.get_future();
 }
+} // namespace ares
 
 #endif // ARES_COMMON_TASK_HPP
