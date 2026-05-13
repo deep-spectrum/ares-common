@@ -183,3 +183,66 @@ TEST(logger_api, log_crit) {
                  "1234605616436508569 -5\n",
                  "abcd, %s: %lld %llu %hhd", foo, ll, ull, i);
 }
+
+#define CHECK_LOG_HEX(LOG_FUNC, expected, msg, data, len)                      \
+    do {                                                                       \
+        testing::internal::CaptureStdout();                                    \
+        LOG_FUNC(data, len, msg);                                              \
+        std::string output = testing::internal::GetCapturedStdout();           \
+        ASSERT_EQ(output, expected);                                           \
+    } while (false)
+
+TEST(logger_api, log_hexdump_dbg) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+    std::vector<uint8_t> data = {0x00, 0x01, 0x02, 0x03,
+                                 0x04, 0x05, 0x06, 0x07};
+
+    CHECK_LOG_HEX(LOG_DBG_HEXDUMP,
+                  "\033[0m[DBG]\033[0m test: foo\n"
+                  "            00 01 02 03   04 05 06 07   |.... ....\n",
+                  "foo", data, data.size());
+}
+
+TEST(logger_api, log_hexdump_info) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+    std::vector<uint8_t> data = {0x00, 0x01, 0x02, 0x03,
+                                 0x04, 0x05, 0x06, 0x07};
+
+    CHECK_LOG_HEX(LOG_INF_HEXDUMP,
+                  "\033[38;2;39;163;105m[INFO]\033[0m test: foo\n"
+                  "             00 01 02 03   04 05 06 07   |.... ....\n",
+                  "foo", data, data.size());
+}
+
+TEST(logger_api, log_hexdump_warn) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+    std::vector<uint8_t> data = {0x00, 0x01, 0x02, 0x03,
+                                 0x04, 0x05, 0x06, 0x07};
+
+    CHECK_LOG_HEX(LOG_WRN_HEXDUMP,
+                  "\033[38;2;163;115;76m[WARN]\033[0m test: foo\n"
+                  "             00 01 02 03   04 05 06 07   |.... ....\n",
+                  "foo", data, data.size());
+}
+
+TEST(logger_api, log_hexdump_error) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+    std::vector<uint8_t> data = {0x00, 0x01, 0x02, 0x03,
+                                 0x04, 0x05, 0x06, 0x07};
+
+    CHECK_LOG_HEX(LOG_ERR_HEXDUMP,
+                  "\033[38;2;193;29;40m[ERR]\033[0m test: foo\n"
+                  "            00 01 02 03   04 05 06 07   |.... ....\n",
+                  "foo", data, data.size());
+}
+
+TEST(logger_api, log_hexdump_crit) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+    std::vector<uint8_t> data = {0x00, 0x01, 0x02, 0x03,
+                                 0x04, 0x05, 0x06, 0x07};
+
+    CHECK_LOG_HEX(LOG_CRIT_HEXDUMP,
+                  "\033[38;2;117;80;123m[CRIT]\033[0m test: foo\n"
+                  "             00 01 02 03   04 05 06 07   |.... ....\n",
+                  "foo", data, data.size());
+}
