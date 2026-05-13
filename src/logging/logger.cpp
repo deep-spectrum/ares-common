@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <sstream>
 
+namespace ares {
 #if defined(USE_PYTHON_LOGGERS)
 #include <memory>
 #include <pybind11/embed.h>
@@ -332,3 +333,4 @@ void Logger::_log_crit(const char *msg) const {
     }
 }
 #endif
+} // namespace ares

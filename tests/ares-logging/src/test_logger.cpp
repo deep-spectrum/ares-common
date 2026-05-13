@@ -20,49 +20,49 @@
 #define CRIT_COLOR  "\033[38;2;117;80;123m"
 
 TEST(logger_api, init) {
-    Logger cut0("cut0", Logger::LOG_LEVEL_DBG);
-    Logger cut1("cut1", Logger::LOG_LEVEL_INFO);
-    Logger cut2("cut2", Logger::LOG_LEVEL_WARN);
-    Logger cut3("cut3", Logger::LOG_LEVEL_ERROR);
-    Logger cut4("cut4", Logger::LOG_LEVEL_CRITICAL);
-    Logger cut5("cut5", Logger::LOG_LEVEL_OFF);
+    ares::Logger cut0("cut0", ares::Logger::LOG_LEVEL_DBG);
+    ares::Logger cut1("cut1", ares::Logger::LOG_LEVEL_INFO);
+    ares::Logger cut2("cut2", ares::Logger::LOG_LEVEL_WARN);
+    ares::Logger cut3("cut3", ares::Logger::LOG_LEVEL_ERROR);
+    ares::Logger cut4("cut4", ares::Logger::LOG_LEVEL_CRITICAL);
+    ares::Logger cut5("cut5", ares::Logger::LOG_LEVEL_OFF);
 
-    ASSERT_EQ(cut0.get_log_level(), Logger::LOG_LEVEL_DBG);
-    ASSERT_EQ(cut1.get_log_level(), Logger::LOG_LEVEL_INFO);
-    ASSERT_EQ(cut2.get_log_level(), Logger::LOG_LEVEL_WARN);
-    ASSERT_EQ(cut3.get_log_level(), Logger::LOG_LEVEL_ERROR);
-    ASSERT_EQ(cut4.get_log_level(), Logger::LOG_LEVEL_CRITICAL);
-    ASSERT_EQ(cut5.get_log_level(), Logger::LOG_LEVEL_OFF);
+    ASSERT_EQ(cut0.get_log_level(), ares::Logger::LOG_LEVEL_DBG);
+    ASSERT_EQ(cut1.get_log_level(), ares::Logger::LOG_LEVEL_INFO);
+    ASSERT_EQ(cut2.get_log_level(), ares::Logger::LOG_LEVEL_WARN);
+    ASSERT_EQ(cut3.get_log_level(), ares::Logger::LOG_LEVEL_ERROR);
+    ASSERT_EQ(cut4.get_log_level(), ares::Logger::LOG_LEVEL_CRITICAL);
+    ASSERT_EQ(cut5.get_log_level(), ares::Logger::LOG_LEVEL_OFF);
 }
 
 TEST(logger_api, logger_set_level) {
-    Logger cut("cut", Logger::LOG_LEVEL_OFF);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_OFF);
 
-    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_OFF);
+    ASSERT_EQ(cut.get_log_level(), ares::Logger::LOG_LEVEL_OFF);
 
-    cut.set_log_level(Logger::LOG_LEVEL_DBG);
-    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_DBG);
+    cut.set_log_level(ares::Logger::LOG_LEVEL_DBG);
+    ASSERT_EQ(cut.get_log_level(), ares::Logger::LOG_LEVEL_DBG);
 
-    cut.set_log_level(Logger::LOG_LEVEL_INFO);
-    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_INFO);
+    cut.set_log_level(ares::Logger::LOG_LEVEL_INFO);
+    ASSERT_EQ(cut.get_log_level(), ares::Logger::LOG_LEVEL_INFO);
 
-    cut.set_log_level(Logger::LOG_LEVEL_WARN);
-    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_WARN);
+    cut.set_log_level(ares::Logger::LOG_LEVEL_WARN);
+    ASSERT_EQ(cut.get_log_level(), ares::Logger::LOG_LEVEL_WARN);
 
-    cut.set_log_level(Logger::LOG_LEVEL_ERROR);
-    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_ERROR);
+    cut.set_log_level(ares::Logger::LOG_LEVEL_ERROR);
+    ASSERT_EQ(cut.get_log_level(), ares::Logger::LOG_LEVEL_ERROR);
 
-    cut.set_log_level(Logger::LOG_LEVEL_CRITICAL);
-    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_CRITICAL);
+    cut.set_log_level(ares::Logger::LOG_LEVEL_CRITICAL);
+    ASSERT_EQ(cut.get_log_level(), ares::Logger::LOG_LEVEL_CRITICAL);
 
-    cut.set_log_level(Logger::LOG_LEVEL_OFF);
-    ASSERT_EQ(cut.get_log_level(), Logger::LOG_LEVEL_OFF);
+    cut.set_log_level(ares::Logger::LOG_LEVEL_OFF);
+    ASSERT_EQ(cut.get_log_level(), ares::Logger::LOG_LEVEL_OFF);
 }
 
 #define Z_LOG_NOARGS(logger, expected, level, input)                           \
     do {                                                                       \
         testing::internal::CaptureStdout();                                    \
-        logger.log(Logger::level, input);                                      \
+        logger.log(ares::Logger::level, input);                                \
         std::string output = testing::internal::GetCapturedStdout();           \
         ASSERT_EQ(output, expected);                                           \
     } while (false)
@@ -70,7 +70,7 @@ TEST(logger_api, logger_set_level) {
 #define Z_LOG_ARGS(logger, expected, level, input, ...)                        \
     do {                                                                       \
         testing::internal::CaptureStdout();                                    \
-        logger.log(Logger::level, input, __VA_ARGS__);                         \
+        logger.log(ares::Logger::level, input, __VA_ARGS__);                   \
         std::string output = testing::internal::GetCapturedStdout();           \
         ASSERT_EQ(output, expected);                                           \
     } while (false)
@@ -81,7 +81,7 @@ TEST(logger_api, logger_set_level) {
                 (Z_LOG_NOARGS(logger, expected, level, input)))
 
 TEST(logger_api, log_various_messages_dbg) {
-    Logger cut("cut", Logger::LOG_LEVEL_DBG);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_DBG);
 
     CHECK_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: abcd\n", LOG_LEVEL_DBG, "abcd");
     CHECK_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: abcd\n",
@@ -153,7 +153,7 @@ TEST(logger_api, log_various_messages_dbg) {
 }
 
 TEST(logger_api, log_various_messages_info) {
-    Logger cut("cut", Logger::LOG_LEVEL_INFO);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_INFO);
 
     CHECK_OUTPUT(cut, "", LOG_LEVEL_DBG, "abcd");
     CHECK_OUTPUT(cut, "\033[38;2;39;163;105m[INFO]\033[0m cut: abcd\n",
@@ -222,7 +222,7 @@ TEST(logger_api, log_various_messages_info) {
 }
 
 TEST(logger_api, log_various_messages_warn) {
-    Logger cut("cut", Logger::LOG_LEVEL_WARN);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_WARN);
 
     CHECK_OUTPUT(cut, "", LOG_LEVEL_DBG, "abcd");
     CHECK_OUTPUT(cut, "", LOG_LEVEL_INFO, "abcd");
@@ -285,7 +285,7 @@ TEST(logger_api, log_various_messages_warn) {
 }
 
 TEST(logger_api, log_various_messages_error) {
-    Logger cut("cut", Logger::LOG_LEVEL_ERROR);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_ERROR);
 
     CHECK_OUTPUT(cut, "", LOG_LEVEL_DBG, "abcd");
     CHECK_OUTPUT(cut, "", LOG_LEVEL_INFO, "abcd");
@@ -342,7 +342,7 @@ TEST(logger_api, log_various_messages_error) {
 }
 
 TEST(logger_api, log_various_messages_critical) {
-    Logger cut("cut", Logger::LOG_LEVEL_CRITICAL);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_CRITICAL);
 
     CHECK_OUTPUT(cut, "", LOG_LEVEL_DBG, "abcd");
     CHECK_OUTPUT(cut, "", LOG_LEVEL_INFO, "abcd");
@@ -394,7 +394,7 @@ TEST(logger_api, log_various_messages_critical) {
 }
 
 TEST(logger_api, log_various_messages_off) {
-    Logger cut("cut", Logger::LOG_LEVEL_OFF);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_OFF);
 
     CHECK_OUTPUT(cut, "", LOG_LEVEL_DBG, "abcd");
     CHECK_OUTPUT(cut, "", LOG_LEVEL_INFO, "abcd");
@@ -439,11 +439,11 @@ TEST(logger_api, log_various_messages_off) {
 }
 
 TEST(logger_api, log_runtime_switch) {
-    Logger cut("cut", Logger::LOG_LEVEL_OFF);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_OFF);
 
     CHECK_OUTPUT(cut, "", LOG_LEVEL_DBG, "abcd");
 
-    cut.set_log_level(Logger::LOG_LEVEL_DBG);
+    cut.set_log_level(ares::Logger::LOG_LEVEL_DBG);
 
     CHECK_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: abcd\n", LOG_LEVEL_DBG, "abcd");
 }
@@ -451,7 +451,7 @@ TEST(logger_api, log_runtime_switch) {
 #define Z_LOG_HEX(logger, expected, level, msg, data, len)                     \
     do {                                                                       \
         testing::internal::CaptureStdout();                                    \
-        logger.log_hexdump(Logger::level, msg, data, len);                     \
+        logger.log_hexdump(ares::Logger::level, msg, data, len);               \
         std::string output = testing::internal::GetCapturedStdout();           \
         ASSERT_EQ(output, expected);                                           \
     } while (false)
@@ -460,7 +460,7 @@ TEST(logger_api, log_runtime_switch) {
     Z_LOG_HEX(logger, expected, level, msg, data, len)
 
 TEST(logger_api, log_hexdump_output_dbg) {
-    Logger cut("cut", Logger::LOG_LEVEL_DBG);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_DBG);
     std::vector<uint8_t> zero;
     std::vector<uint8_t> single = {0x00};
     std::vector<uint8_t> four = {0x00, 0x01, 0x02, 0x03};
@@ -702,7 +702,7 @@ TEST(logger_api, log_hexdump_output_dbg) {
 }
 
 TEST(logger_api, log_hexdump_output_info) {
-    Logger cut("cut", Logger::LOG_LEVEL_INFO);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_INFO);
     std::vector<uint8_t> zero;
     std::vector<uint8_t> single = {0x00};
     std::vector<uint8_t> four = {0x00, 0x01, 0x02, 0x03};
@@ -913,7 +913,7 @@ TEST(logger_api, log_hexdump_output_info) {
 }
 
 TEST(logger_api, log_hexdump_output_warn) {
-    Logger cut("cut", Logger::LOG_LEVEL_WARN);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_WARN);
     std::vector<uint8_t> zero;
     std::vector<uint8_t> single = {0x00};
     std::vector<uint8_t> four = {0x00, 0x01, 0x02, 0x03};
@@ -1093,7 +1093,7 @@ TEST(logger_api, log_hexdump_output_warn) {
 }
 
 TEST(logger_api, log_hexdump_output_error) {
-    Logger cut("cut", Logger::LOG_LEVEL_ERROR);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_ERROR);
     std::vector<uint8_t> zero;
     std::vector<uint8_t> single = {0x00};
     std::vector<uint8_t> four = {0x00, 0x01, 0x02, 0x03};
@@ -1242,7 +1242,7 @@ TEST(logger_api, log_hexdump_output_error) {
 }
 
 TEST(logger_api, log_hexdump_output_critical) {
-    Logger cut("cut", Logger::LOG_LEVEL_CRITICAL);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_CRITICAL);
     std::vector<uint8_t> zero;
     std::vector<uint8_t> single = {0x00};
     std::vector<uint8_t> four = {0x00, 0x01, 0x02, 0x03};
@@ -1360,7 +1360,7 @@ TEST(logger_api, log_hexdump_output_critical) {
 }
 
 TEST(logger_api, log_hexdump_output_off) {
-    Logger cut("cut", Logger::LOG_LEVEL_OFF);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_OFF);
     std::vector<uint8_t> zero;
     std::vector<uint8_t> single = {0x00};
     std::vector<uint8_t> four = {0x00, 0x01, 0x02, 0x03};
@@ -1448,19 +1448,19 @@ TEST(logger_api, log_hexdump_output_off) {
 }
 
 TEST(logger_api, log_hexdump_runtime_switch) {
-    Logger cut("cut", Logger::LOG_LEVEL_OFF);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_OFF);
     std::vector<uint8_t> zero;
 
     CHECK_HEX_OUTPUT(cut, "", LOG_LEVEL_DBG, "foo", zero, 0);
 
-    cut.set_log_level(Logger::LOG_LEVEL_DBG);
+    cut.set_log_level(ares::Logger::LOG_LEVEL_DBG);
 
     CHECK_HEX_OUTPUT(cut, "\033[0m[DBG]\033[0m cut: foo\n\n", LOG_LEVEL_DBG,
                      "foo", zero, 0);
 }
 
 TEST(logger_api, log_hexdump_hex_output) {
-    Logger cut("cut", Logger::LOG_LEVEL_DBG);
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_DBG);
     std::vector<uint8_t> single = {0x00};
     std::string expected = "\033[0m[DBG]\033[0m cut: foo\n"
                            "           00                          |. \n";
