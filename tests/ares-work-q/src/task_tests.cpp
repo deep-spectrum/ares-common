@@ -42,12 +42,41 @@ TEST(task_api, basic_getters_setters) {
     // teardown handled by destructor...
 }
 
-void JoinHelper(int &value, int set_value,
-                const std::chrono::milliseconds sleep_time) {
-    std::this_thread::sleep_for(sleep_time);
-    value = set_value;
-}
-
 TEST(task_api, task_construct_error) {
     ASSERT_THROW(ares::Task<void()> cut(nullptr), ares::TaskException);
+}
+
+TEST(task_api, task_get_result) {
+    ares::Task<int()> cut0([]() { return 0xDEADBEEF; });
+    ares::Task<int()> cut1([]() {
+        throw std::runtime_error("foo");
+        return 0;
+    });
+    ares::Task<void()> cut2([]() {});
+
+    int ret;
+
+    ASSERT_THROW(ret = cut0.get(), ares::TaskException);
+    ASSERT_THROW(ret = cut1.get(), ares::TaskException);
+    ASSERT_THROW(cut2.get(), ares::TaskException);
+
+    cut0.start();
+    cut1.start();
+    cut2.start();
+
+    ASSERT_THROW(ret = cut0.get(), ares::TaskException);
+    ASSERT_THROW(ret = cut1.get(), ares::TaskException);
+    ASSERT_THROW(cut2.get(), ares::TaskException);
+
+    cut0.join();
+    cut1.join();
+    cut2.join();
+
+    ASSERT_NO_THROW(ret = cut0.get());
+    ASSERT_EQ(ret, 0xDEADBEEF);
+    ASSERT_THROW(ret = cut0.get(), ares::TaskException);
+
+    ASSERT_THROW(ret = cut1.get(), std::runtime_error);
+
+    ASSERT_NO_THROW(cut2.get());
 }
