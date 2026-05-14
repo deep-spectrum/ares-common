@@ -66,6 +66,31 @@ struct FunctionTraits<R (*)(Args...)> {
 template <typename Signature>
 class Task {
   public:
+    /**
+     * @enum State
+     * Task states
+     */
+    enum State {
+        /**
+         * Task ready to be started or ran.
+         */
+        READY,
+
+        /**
+         * Task is currently running.
+         *
+         * @note This will automatically transition into Task::JOINED if task is
+         * ran with `run()`. Otherwise, in order to transition task into
+         * Task::JOINED, `join()` needs to be called first.
+         */
+        RUNNING,
+
+        /**
+         * Task has been joined and the results are ready to be read.
+         */
+        JOINED,
+    };
+
     using ReturnType = typename internal::FunctionTraits<Signature>::ReturnType;
 
     /**
@@ -174,13 +199,13 @@ class Task {
      */
     ReturnType get();
 
-  private:
-    enum states {
-        READY,
-        RUNNING,
-        JOINED,
-    };
+    /**
+     * Get the current state of the task.
+     * @return The current state of the task.
+     */
+    State get_state();
 
+  private:
     bool _essential = false;
     std::string _name;
     std::packaged_task<ReturnType()> _task;
@@ -190,7 +215,7 @@ class Task {
     std::function<Signature> _handler;
 
     SpinLock _state_lock;
-    states _state = READY;
+    State _state = READY;
 
     int _join();
 
@@ -284,6 +309,12 @@ typename Task<Signature>::ReturnType Task<Signature>::get() {
     }
     _state = READY;
     return _future.get();
+}
+
+template <typename Signature>
+typename Task<Signature>::State Task<Signature>::get_state() {
+    std::unique_lock lock(_state_lock);
+    return _state;
 }
 
 template <typename Signature>
