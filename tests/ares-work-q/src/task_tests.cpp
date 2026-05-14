@@ -135,3 +135,44 @@ TEST(task_api, task_start) {
     // keep the old thread ID.
     sem.give();
 }
+
+static void run_task(ares::Task<void(ares::semaphore<> &, uint32_t, uint32_t,
+                                     const uint32_t *)> &cut,
+                     ares::semaphore<> &sem, uint32_t value1, uint32_t value2,
+                     const uint32_t *value3) {
+    EXPECT_NO_THROW(cut.run(std::ref(sem), value1, value2, value3));
+
+    std::this_thread::sleep_for(100ms);
+
+    EXPECT_NO_THROW(cut.run(std::ref(sem), value1, value2, value3));
+}
+
+TEST(task_api, task_run) {
+    ares::Task<void(ares::semaphore<> &, uint32_t, uint32_t, const uint32_t *)>
+        cut(wait_until_ready);
+    ares::semaphore<> sem(0);
+    std::thread dummy, run_thread;
+    const uint32_t *val2_ptr = &val2;
+
+    run_thread = std::thread(run_task, std::ref(cut), std::ref(sem), val0, val1,
+                             val2_ptr);
+    // wait for other thread to initialize
+    while (cut.get_state() !=
+           ares::Task<void(ares::semaphore<1> &, unsigned int, unsigned int,
+                           const unsigned int *)>::RUNNING) {
+        std::this_thread::sleep_for(10ms);
+    }
+    EXPECT_NE(cut.get_id(), dummy.get_id());
+    EXPECT_NE(cut.get_id(), std::this_thread::get_id());
+    EXPECT_EQ(cut.get_id(), run_thread.get_id());
+
+    sem.give();
+    // If this gives trouble, replace with semaphore
+    std::this_thread::sleep_for(20ms);
+    EXPECT_EQ(cut.get_state(),
+              ares::Task<void(ares::semaphore<1> &, unsigned int, unsigned int,
+                              const unsigned int *)>::JOINED);
+
+    sem.give();
+    run_thread.join();
+}
