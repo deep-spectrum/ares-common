@@ -56,6 +56,7 @@ TEST(task_api, task_get_result) {
 
     int ret;
 
+    // Task should be started first
     ASSERT_THROW(ret = cut0.get(), ares::TaskException);
     ASSERT_THROW(ret = cut1.get(), ares::TaskException);
     ASSERT_THROW(cut2.get(), ares::TaskException);
@@ -64,6 +65,7 @@ TEST(task_api, task_get_result) {
     cut1.start();
     cut2.start();
 
+    // Task should be joined first
     ASSERT_THROW(ret = cut0.get(), ares::TaskException);
     ASSERT_THROW(ret = cut1.get(), ares::TaskException);
     ASSERT_THROW(cut2.get(), ares::TaskException);
@@ -72,11 +74,16 @@ TEST(task_api, task_get_result) {
     cut1.join();
     cut2.join();
 
+    // The result should be available now
     ASSERT_NO_THROW(ret = cut0.get());
     ASSERT_EQ(ret, 0xDEADBEEF);
-    ASSERT_THROW(ret = cut0.get(), ares::TaskException);
 
     ASSERT_THROW(ret = cut1.get(), std::runtime_error);
 
     ASSERT_NO_THROW(cut2.get());
+
+    // Reading the result should reset things back to the original state
+    ASSERT_THROW(ret = cut0.get(), ares::TaskException);
+    ASSERT_THROW(ret = cut1.get(), ares::TaskException);
+    ASSERT_THROW(cut2.get(), ares::TaskException);
 }
