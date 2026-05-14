@@ -8,6 +8,7 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
+#include <ares/synchronization/semaphore.hpp>
 #include <ares/work-q/task.hpp>
 #include <chrono>
 #include <gtest/gtest.h>
@@ -40,6 +41,8 @@ TEST(task_api, basic_getters_setters) {
     ASSERT_NE(cut.get_id(), dummy.get_id());
 
     // teardown handled by destructor...
+    // This should throw an error if the destructor did not handle thread
+    // cleanup...
 }
 
 TEST(task_api, task_construct_error) {
@@ -50,6 +53,7 @@ TEST(task_api, task_get_result) {
     ares::Task<int()> cut0([]() { return 0xDEADBEEF; });
     ares::Task<int()> cut1([]() {
         throw std::runtime_error("foo");
+        // ReSharper disable once CppDFAUnreachableCode
         return 0;
     });
     ares::Task<void()> cut2([]() {});
@@ -86,4 +90,48 @@ TEST(task_api, task_get_result) {
     ASSERT_THROW(ret = cut0.get(), ares::TaskException);
     ASSERT_THROW(ret = cut1.get(), ares::TaskException);
     ASSERT_THROW(cut2.get(), ares::TaskException);
+}
+
+constexpr uint32_t val0 = 0xAAAA;
+constexpr uint32_t val1 = 0xBBBB;
+constexpr uint32_t val2 = 0xCCCC;
+
+static void wait_until_ready(ares::semaphore<> &sem, const uint32_t value0,
+                             const uint32_t value1, const uint32_t *value2) {
+    EXPECT_NO_THROW(sem.take(5s));
+    EXPECT_EQ(value0, val0);
+    EXPECT_EQ(value1, val1);
+    EXPECT_NE(value2, nullptr);
+    EXPECT_EQ(*value2, val2);
+}
+
+TEST(task_api, task_start) {
+    ares::Task<void(ares::semaphore<> &, uint32_t, uint32_t, const uint32_t *)>
+        cut(wait_until_ready);
+    ares::semaphore<> sem(0);
+    std::thread dummy;
+    const uint32_t *val2_ptr = &val2;
+
+    // Can we start the task?
+    EXPECT_NO_THROW(cut.start(std::ref(sem), val0, val1, val2_ptr));
+
+    std::this_thread::sleep_for(500ms);
+    std::thread::id id1 = cut.get_id();
+    // Can the task create a new thread?
+    EXPECT_NE(id1, dummy.get_id());
+    EXPECT_NE(id1, std::this_thread::get_id());
+
+    // Expect the task to throw an error while running
+    EXPECT_THROW(cut.start(std::ref(sem), val0, val1, val2_ptr),
+                 ares::TaskException);
+
+    sem.give();
+
+    cut.join();
+
+    // Spawn a new task thread. This should spawn a new thread
+    EXPECT_NO_THROW(cut.start(std::ref(sem), val0, val1, val2_ptr));
+    // The task will reuse the old thread that was joined earlier. This will
+    // keep the old thread ID.
+    sem.give();
 }

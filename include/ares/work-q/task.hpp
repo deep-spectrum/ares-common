@@ -12,7 +12,6 @@
 #define ARES_COMMON_TASK_HPP
 
 #include <ares/synchronization/spinlock.hpp>
-#include <atomic>
 #include <chrono>
 #include <functional>
 #include <future>
@@ -328,8 +327,7 @@ void Task<Signature>::_init_task(Args &&...args) {
         }
     };
 
-    auto bound_task =
-        std::bind(std::move(wrapper), std::forward<Args>(args)...);
+    auto bound_task = std::move(wrapper);
     _task = std::packaged_task<ReturnType()>(std::move(bound_task));
     _future = _task.get_future();
 }
