@@ -11,6 +11,7 @@
 #include <ares/synchronization/semaphore.hpp>
 #include <ares/work-q/task.hpp>
 #include <chrono>
+#include <future>
 #include <gtest/gtest.h>
 #include <thread>
 
@@ -176,4 +177,38 @@ TEST(task_api, task_run) {
 
     sem.give();
     run_thread.join();
+}
+
+static void sleepy_task(std::chrono::milliseconds sleep_time) {
+    std::this_thread::sleep_for(sleep_time);
+}
+
+TEST(task_api, task_join) {
+    auto future = std::async(std::launch::async, []() {
+        ares::Task<void(std::chrono::milliseconds)> cut(sleepy_task);
+        int ret;
+
+        EXPECT_NO_THROW(ret = cut.join());
+        EXPECT_EQ(ret, -EALREADY);
+        EXPECT_EQ(cut.get_state(), decltype(cut)::READY);
+
+        EXPECT_NO_THROW(cut.start(1s));
+        EXPECT_EQ(cut.get_state(), decltype(cut)::RUNNING);
+
+        EXPECT_NO_THROW(ret = cut.join());
+        EXPECT_EQ(ret, 0);
+        EXPECT_EQ(cut.get_state(), decltype(cut)::JOINED);
+
+        EXPECT_NO_THROW(cut.start(2s));
+
+        EXPECT_NO_THROW(ret = cut.join(100ms));
+        EXPECT_EQ(ret, -ETIMEDOUT);
+        EXPECT_EQ(cut.get_state(), decltype(cut)::RUNNING);
+
+        EXPECT_NO_THROW(ret = cut.join(4s));
+        EXPECT_EQ(ret, 0);
+        EXPECT_EQ(cut.get_state(), decltype(cut)::JOINED);
+    });
+
+    EXPECT_EQ(future.wait_for(10s), std::future_status::ready);
 }
