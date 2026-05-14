@@ -43,10 +43,8 @@ TEST(task_api, basic_getters_setters) {
     ASSERT_NE(cut.get_id(), dummy.get_id());
     ASSERT_EQ(cut.get_state(), decltype(cut)::RUNNING);
 
-    // teardown handled by destructor...
-    // This should throw an error if the destructor did not handle thread
-    // cleanup...
-    // JOINED is checked in the task_get_result test
+    cut.join();
+    EXPECT_EQ(cut.get_state(), decltype(cut)::JOINED);
 }
 
 TEST(task_api, task_construct_error) {
@@ -211,4 +209,17 @@ TEST(task_api, task_join) {
     });
 
     EXPECT_EQ(future.wait_for(10s), std::future_status::ready);
+}
+
+TEST(task_api, task_destructor) {
+    auto future = std::async(std::launch::async, []() {
+        ares::Task<void(std::chrono::milliseconds)> cut(sleepy_task);
+
+        cut.start(1s);
+
+        // Test if task destructor actually joins the thread
+    });
+
+    EXPECT_EQ(future.wait_for(10s), std::future_status::ready);
+    EXPECT_NO_THROW(future.get());
 }
