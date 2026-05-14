@@ -50,8 +50,29 @@ add_executable(
 )
 target_link_libraries(task_test GTest::gtest_main)
 
+add_executable(
+        critical_workq_test
+        src/critical_workq_tests.cpp ${WORK_Q_SRC}
+)
+target_link_libraries(critical_workq_test GTest::gtest_main)
+
+add_executable(
+        work_queue_test
+        src/work_queue_tests.cpp ${WORK_Q_SRC}
+)
+target_link_libraries(work_queue_test GTest::gtest_main)
+
+add_executable(
+        work_test
+        src/work_tests.cpp ${WORK_Q_SRC}
+)
+target_link_libraries(work_test GTest::gtest_main)
+
 ################################################
 # Discover tests here
 ################################################
 include(GoogleTest)
 gtest_discover_tests(task_test)
+gtest_discover_tests(critical_workq_test)
+gtest_discover_tests(work_queue_test)
+gtest_discover_tests(work_test)
