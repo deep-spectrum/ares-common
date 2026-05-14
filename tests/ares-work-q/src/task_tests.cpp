@@ -223,3 +223,14 @@ TEST(task_api, task_destructor) {
     EXPECT_EQ(future.wait_for(10s), std::future_status::ready);
     EXPECT_NO_THROW(future.get());
 }
+
+static void crash_task() {
+    ares::Task<void()> cut(
+        []() { throw std::runtime_error("This should crash program."); });
+    EXPECT_EQ(cut.set_essential(true), 0);
+    cut.start();
+}
+
+TEST(task_api, crash_if_essential_crashes) {
+    EXPECT_EXIT(crash_task(), ::testing::KilledBySignal(SIGABRT), "");
+}
