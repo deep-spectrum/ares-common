@@ -33,16 +33,19 @@ TEST(task_api, basic_getters_setters) {
 
     ASSERT_TRUE(cut.get_essential());
     ASSERT_STREQ(cut.get_name(), "cut");
+    ASSERT_EQ(cut.get_state(), decltype(cut)::READY);
 
     cut.start();
 
     ASSERT_EQ(cut.set_essential(false), -EBUSY);
     ASSERT_EQ(cut.set_name("foo"), -EBUSY);
     ASSERT_NE(cut.get_id(), dummy.get_id());
+    ASSERT_EQ(cut.get_state(), decltype(cut)::RUNNING);
 
     // teardown handled by destructor...
     // This should throw an error if the destructor did not handle thread
     // cleanup...
+    // JOINED is checked in the task_get_result test
 }
 
 TEST(task_api, task_construct_error) {
@@ -77,6 +80,8 @@ TEST(task_api, task_get_result) {
     cut0.join();
     cut1.join();
     cut2.join();
+
+    ASSERT_EQ(cut0.get_state(), decltype(cut0)::JOINED);
 
     // The result should be available now
     ASSERT_NO_THROW(ret = cut0.get());
@@ -157,9 +162,7 @@ TEST(task_api, task_run) {
     run_thread = std::thread(run_task, std::ref(cut), std::ref(sem), val0, val1,
                              val2_ptr);
     // wait for other thread to initialize
-    while (cut.get_state() !=
-           ares::Task<void(ares::semaphore<1> &, unsigned int, unsigned int,
-                           const unsigned int *)>::RUNNING) {
+    while (cut.get_state() != decltype(cut)::RUNNING) {
         std::this_thread::sleep_for(10ms);
     }
     EXPECT_NE(cut.get_id(), dummy.get_id());
@@ -169,9 +172,7 @@ TEST(task_api, task_run) {
     sem.give();
     // If this gives trouble, replace with semaphore
     std::this_thread::sleep_for(20ms);
-    EXPECT_EQ(cut.get_state(),
-              ares::Task<void(ares::semaphore<1> &, unsigned int, unsigned int,
-                              const unsigned int *)>::JOINED);
+    EXPECT_EQ(cut.get_state(), decltype(cut)::JOINED);
 
     sem.give();
     run_thread.join();
