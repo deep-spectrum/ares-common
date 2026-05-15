@@ -348,6 +348,10 @@ int WorkQ::queue_drain(bool plug) {
     int ret = 0;
     std::unique_lock lock_(*lock);
 
+    if (!flag_test(&flags, WORK_QUEUE_STARTED_BIT)) {
+        return -ENODEV;
+    }
+
     if (((flags_get(&flags) & (WORK_QUEUE_BUSY | WORK_QUEUE_DRAIN)) != 0) ||
         plug || !sys_slist_is_empty(&pending)) {
         flag_set(&flags, WORK_QUEUE_DRAIN_BIT);
