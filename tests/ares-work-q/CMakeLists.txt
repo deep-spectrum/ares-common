@@ -51,12 +51,6 @@ add_executable(
 target_link_libraries(task_test GTest::gtest_main)
 
 add_executable(
-        critical_workq_test
-        src/critical_workq_tests.cpp ${WORK_Q_SRC}
-)
-target_link_libraries(critical_workq_test GTest::gtest_main)
-
-add_executable(
         work_queue_test
         src/work_queue_tests.cpp ${WORK_Q_SRC}
 )
