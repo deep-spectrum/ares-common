@@ -11,6 +11,8 @@
 #ifndef ARES_THREAD_UTILS_H
 #define ARES_THREAD_UTILS_H
 
+#include <thread>
+
 enum thread_prio {
     HIGH,
     MED,
@@ -18,5 +20,6 @@ enum thread_prio {
 };
 
 int change_thread_prio(thread_prio prio);
+int pin_cpu(std::thread &thread, int cpu);
 
 #endif // ARES_THREAD_UTILS_H

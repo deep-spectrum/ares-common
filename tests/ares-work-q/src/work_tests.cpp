@@ -16,21 +16,19 @@ static void counter_handler(ares::Work *work) {
 }
 
 TEST(work, unstarted) {
-    int rc;
     ares::WorkQ not_started_q;
 
     ares::Work work(counter_handler);
     EXPECT_EQ(work.work_busy_get(), 0);
 
-    rc = not_started_q.submit(&work);
+    int rc = not_started_q.submit(&work);
     EXPECT_EQ(rc, -ENODEV);
 }
 
 TEST(work, null_queue) {
-    int rc;
     ares::Work work(counter_handler);
     ASSERT_EQ(work.work_busy_get(), 0);
 
-    rc = ares::work_submit_to_queue(nullptr, &work);
+    int rc = ares::work_submit_to_queue(nullptr, &work);
     ASSERT_EQ(rc, -EINVAL);
 }

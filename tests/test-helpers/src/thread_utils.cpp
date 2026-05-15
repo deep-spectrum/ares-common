@@ -15,10 +15,25 @@ extern "C" {
 #include <pthread.h>
 #include <stdio.h>
 
+static int pin_cpu_pthread(pthread_t tid, int cpu) {
+    cpu_set_t cpu_set;
+    int ret;
+
+    CPU_ZERO(&cpu_set);
+    CPU_SET(cpu, &cpu_set);
+
+    ret = pthread_setaffinity_np(tid, sizeof(cpu_set_t), &cpu_set);
+    if (ret != 0) {
+        perror("pthread_setaffinity_np()");
+        return -errno;
+    }
+
+    return ret;
+}
+
 static int set_thread_prio(int new_prio) {
     pthread_t tid = pthread_self();
     struct sched_param param {};
-    cpu_set_t cpu_set;
     int policy;
     int prio = 10 + new_prio;
 
@@ -42,13 +57,9 @@ static int set_thread_prio(int new_prio) {
         return -errno;
     }
 
-    CPU_ZERO(&cpu_set);
-    CPU_SET(0, &cpu_set);
-
-    ret = pthread_setaffinity_np(tid, sizeof(cpu_set_t), &cpu_set);
-    if (ret != 0) {
-        perror("pthread_setaffinity_np()");
-        return -errno;
+    ret = pin_cpu_pthread(tid, 0);
+    if (ret < 0) {
+        return ret;
     }
 
     ret = pthread_getschedparam(tid, &policy, &param);
@@ -86,4 +97,8 @@ int change_thread_prio(thread_prio prio) {
     }
 
     return set_thread_prio(thread_prio);
+}
+
+int pin_cpu(std::thread &thread, int cpu) {
+    return pin_cpu_pthread(thread.native_handle(), cpu);
 }
