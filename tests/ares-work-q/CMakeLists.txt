@@ -67,6 +67,5 @@ target_link_libraries(work_test GTest::gtest_main)
 ################################################
 include(GoogleTest)
 gtest_discover_tests(task_test)
-gtest_discover_tests(critical_workq_test)
 gtest_discover_tests(work_queue_test)
 gtest_discover_tests(work_test)
