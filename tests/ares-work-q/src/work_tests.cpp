@@ -25,3 +25,12 @@ TEST(work, unstarted) {
     rc = not_started_q.submit(&work);
     EXPECT_EQ(rc, -ENODEV);
 }
+
+TEST(work, null_queue) {
+    int rc;
+    ares::Work work(counter_handler);
+    ASSERT_EQ(work.work_busy_get(), 0);
+
+    rc = ares::work_submit_to_queue(nullptr, &work);
+    ASSERT_EQ(rc, -EINVAL);
+}
