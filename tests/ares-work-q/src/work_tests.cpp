@@ -13,19 +13,24 @@
 #include <ares/work-q/work_q.hpp>
 #include <atomic>
 #include <gtest/gtest.h>
+#include <memory>
 
 using namespace std::chrono_literals;
 
-struct CounterWork {
-    explicit CounterWork(const ares::work_handler_t &handler,
-                         const std::thread::id inc)
-        : inc_thread(inc), sync_sem(0), rel_sem(0), work(handler) {}
+constexpr size_t max_sem_cnt = 10;
 
-    std::atomic_int count = 0;
+struct CounterWork {
+    explicit CounterWork(
+        const ares::work_handler_t &handler, const std::thread::id inc,
+        const std::shared_ptr<ares::semaphore<max_sem_cnt>> &s_sem,
+        const std::shared_ptr<std::atomic_int> &cnt)
+        : count(cnt), inc_thread(inc), sync_sem(s_sem), work(handler) {}
+
+    std::shared_ptr<std::atomic_int> count;
     std::thread::id inc_thread;
     std::atomic_int resubmits_left = 0;
-    ares::semaphore<> sync_sem;
-    ares::semaphore<> rel_sem;
+    std::shared_ptr<ares::semaphore<max_sem_cnt>> sync_sem;
+    std::shared_ptr<ares::semaphore<max_sem_cnt>> rel_sem = nullptr;
     ares::Work work;
 };
 
@@ -33,16 +38,16 @@ static void counter_handler(ares::Work *work) {
     auto counter_work = ares::container_of(work, &CounterWork::work);
 
     if (counter_work->inc_thread == std::this_thread::get_id()) {
-        ++counter_work->count;
+        ++(*counter_work->count);
     } else {
-        --counter_work->count;
+        --(*counter_work->count);
     }
 
     --counter_work->resubmits_left;
     if (counter_work->resubmits_left > 0) {
         EXPECT_EQ(ares::work_submit_to_queue(nullptr, work), 2);
     } else {
-        counter_work->sync_sem.give();
+        counter_work->sync_sem->give();
     }
 }
 
@@ -65,10 +70,14 @@ TEST(work, null_queue) {
 }
 
 TEST(work, simple_submit) {
+    auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto count = std::make_shared<std::atomic_int>(0);
+
     ares::WorkQ work_q;
     work_q.start(nullptr);
 
-    CounterWork work(counter_handler, work_q.queue_thread_get());
+    CounterWork work(counter_handler, work_q.queue_thread_get(), sync_sem,
+                     count);
 
     EXPECT_EQ(work.work.work_busy_get(), 0);
     EXPECT_FALSE(work.work.work_is_pending());
@@ -77,26 +86,31 @@ TEST(work, simple_submit) {
     EXPECT_EQ(rc, 1);
     EXPECT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
     EXPECT_TRUE(work.work.work_is_pending());
-    EXPECT_EQ(work.count, 0);
+    EXPECT_EQ(*count, 0);
 
     std::this_thread::sleep_for(1ms);
-    EXPECT_EQ(work.count, 1);
+    EXPECT_EQ(*count, 1);
     EXPECT_EQ(work.work.work_busy_get(), 0);
 
-    EXPECT_NO_THROW(work.sync_sem.take(ares::no_wait));
+    EXPECT_NO_THROW(sync_sem->take(ares::no_wait));
 }
 
 static void rel_handler(ares::Work *work) {
     auto cnt_work = ares::container_of(work, &CounterWork::work);
-    cnt_work->rel_sem.take();
+    cnt_work->rel_sem->take();
     counter_handler(work);
 }
 
 TEST(work, sync_queue) {
+    auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto rel_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto count = std::make_shared<std::atomic_int>(0);
+
     ares::WorkQ work_q;
     work_q.start(nullptr);
 
-    CounterWork work(rel_handler, work_q.queue_thread_get());
+    CounterWork work(rel_handler, work_q.queue_thread_get(), sync_sem, count);
+    work.rel_sem = rel_sem;
 
     EXPECT_EQ(work.work.work_busy_get(), 0);
     EXPECT_FALSE(work.work.work_is_pending());
@@ -105,46 +119,89 @@ TEST(work, sync_queue) {
     EXPECT_EQ(rc, 1);
     EXPECT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
 
-    EXPECT_EQ(work.count, 0);
+    EXPECT_EQ(*count, 0);
 
     std::this_thread::sleep_for(1ms);
-    EXPECT_EQ(work.count, 0);
+    EXPECT_EQ(*count, 0);
     EXPECT_EQ(work.work.work_busy_get(), ares::WORK_RUNNING);
 
-    work.rel_sem.give();
-    EXPECT_EQ(work.count, 0);
+    rel_sem->give();
+    EXPECT_EQ(*count, 0);
 
-    EXPECT_NO_THROW(work.sync_sem.take());
-    EXPECT_EQ(work.count, 1);
+    EXPECT_NO_THROW(sync_sem->take());
+    EXPECT_EQ(*count, 1);
 }
 
 TEST(work, reentrent_queue) {
+    auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto rel_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto count = std::make_shared<std::atomic_int>(0);
+
     ares::WorkQ work_q0, work_q1;
     work_q0.start(nullptr);
     work_q1.start(nullptr);
 
-    CounterWork work(rel_handler, work_q0.queue_thread_get());
+    CounterWork work(rel_handler, work_q0.queue_thread_get(), sync_sem, count);
+    work.rel_sem = rel_sem;
 
     int rc = work_q0.submit(&work.work);
     EXPECT_EQ(rc, 1);
-    EXPECT_EQ(work.count, 0);
+    EXPECT_EQ(*count, 0);
 
     std::this_thread::sleep_for(1ms);
-    EXPECT_EQ(work.count, 0);
+    EXPECT_EQ(*count, 0);
 
     rc = work_q1.submit(&work.work);
     EXPECT_EQ(rc, 2);
 
-    work.rel_sem.give();
-    EXPECT_NO_THROW(work.sync_sem.take());
-    EXPECT_EQ(work.count, 1);
+    rel_sem->give();
+    EXPECT_NO_THROW(sync_sem->take());
+    EXPECT_EQ(*count, 1);
 
-    work.rel_sem.give();
-    EXPECT_NO_THROW(work.sync_sem.take());
-    EXPECT_EQ(work.count, 2);
+    rel_sem->give();
+    EXPECT_NO_THROW(sync_sem->take());
+    EXPECT_EQ(*count, 2);
 }
 
-TEST(work, queued_flush) {}
+// ReSharper disable once CppUseAuto
+constexpr std::chrono::milliseconds delay = 100ms;
+
+static void delay_handler(ares::Work *work) {
+    std::this_thread::sleep_for(delay);
+    counter_handler(work);
+}
+
+TEST(work, queued_flush) {
+    auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto count = std::make_shared<std::atomic_int>(0);
+
+    ares::WorkQ work_q;
+    work_q.start(nullptr);
+
+    CounterWork work0(delay_handler, work_q.queue_thread_get(), sync_sem,
+                      count);
+    CounterWork work1(delay_handler, work_q.queue_thread_get(), sync_sem,
+                      count);
+
+    int rc = work_q.submit(&work1.work);
+    EXPECT_EQ(rc, 1);
+    rc = work_q.submit(&work0.work);
+    EXPECT_EQ(rc, 1);
+    EXPECT_EQ(*count, 0);
+
+    EXPECT_EQ(work0.work.work_busy_get(), ares::WORK_QUEUED);
+    EXPECT_EQ(work1.work.work_busy_get(), ares::WORK_QUEUED);
+    EXPECT_TRUE(work0.work.work_flush());
+    EXPECT_FALSE(work1.work.work_flush());
+
+    EXPECT_EQ(*count, 2);
+    EXPECT_FALSE(work0.work.work_is_pending());
+    EXPECT_FALSE(work1.work.work_is_pending());
+    EXPECT_NO_THROW(sync_sem->take(ares::no_wait));
+
+    EXPECT_FALSE(work0.work.work_is_pending());
+    EXPECT_FALSE(work1.work.work_is_pending());
+}
 
 TEST(work, running_flush) {}
 
