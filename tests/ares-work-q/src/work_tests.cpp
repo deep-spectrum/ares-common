@@ -16,20 +16,20 @@
 
 using namespace std::chrono_literals;
 
-static void counter_handler(ares::Work *work);
-
 struct CounterWork {
     enum operation {
         ADD,
         SUB,
     };
 
-    CounterWork() : work(counter_handler), sync_sem(0) {}
+    explicit CounterWork(const ares::work_handler_t &handler)
+        : sync_sem(0), rel_sem(0), work(handler) {}
 
     std::atomic_int count = 0;
     operation op = ADD;
     std::atomic_int resubmits_left = 0;
     ares::semaphore<> sync_sem;
+    ares::semaphore<> rel_sem;
     ares::Work work;
 };
 
@@ -53,7 +53,7 @@ static void counter_handler(ares::Work *work) {
 
     --counter_work->resubmits_left;
     if (counter_work->resubmits_left > 0) {
-        ares::work_submit_to_queue(nullptr, work);
+        EXPECT_EQ(ares::work_submit_to_queue(nullptr, work), 2);
     } else {
         counter_work->sync_sem.give();
     }
@@ -78,7 +78,7 @@ TEST(work, null_queue) {
 }
 
 TEST(work, simple_submit) {
-    CounterWork work;
+    CounterWork work(counter_handler);
     ares::WorkQ work_q;
 
     work_q.start(nullptr);
@@ -99,7 +99,37 @@ TEST(work, simple_submit) {
     ASSERT_NO_THROW(work.sync_sem.take(ares::no_wait));
 }
 
-TEST(work, sync_queue) {}
+static void rel_handler(ares::Work *work) {
+    auto cnt_work = ares::container_of(work, &CounterWork::work);
+    cnt_work->rel_sem.take();
+    counter_handler(work);
+}
+
+TEST(work, sync_queue) {
+    CounterWork work(rel_handler);
+    ares::WorkQ work_q;
+
+    work_q.start(nullptr);
+
+    ASSERT_EQ(work.work.work_busy_get(), 0);
+    ASSERT_FALSE(work.work.work_is_pending());
+
+    int rc = work_q.submit(&work.work);
+    ASSERT_EQ(rc, 1);
+    ASSERT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
+
+    ASSERT_EQ(work.count, 0);
+
+    std::this_thread::sleep_for(1ms);
+    ASSERT_EQ(work.count, 0);
+    ASSERT_EQ(work.work.work_busy_get(), ares::WORK_RUNNING);
+
+    work.rel_sem.give();
+    ASSERT_EQ(work.count, 0);
+
+    ASSERT_NO_THROW(work.sync_sem.take());
+    ASSERT_EQ(work.count, 1);
+}
 
 TEST(work, reentrent_queue) {}
 
