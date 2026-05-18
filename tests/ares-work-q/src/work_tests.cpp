@@ -70,20 +70,20 @@ TEST(work, simple_submit) {
 
     CounterWork work(counter_handler, work_q.queue_thread_get());
 
-    ASSERT_EQ(work.work.work_busy_get(), 0);
-    ASSERT_FALSE(work.work.work_is_pending());
+    EXPECT_EQ(work.work.work_busy_get(), 0);
+    EXPECT_FALSE(work.work.work_is_pending());
 
     int rc = work_q.submit(&work.work);
-    ASSERT_EQ(rc, 1);
-    ASSERT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
-    ASSERT_TRUE(work.work.work_is_pending());
-    ASSERT_EQ(work.count, 0);
+    EXPECT_EQ(rc, 1);
+    EXPECT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
+    EXPECT_TRUE(work.work.work_is_pending());
+    EXPECT_EQ(work.count, 0);
 
     std::this_thread::sleep_for(1ms);
-    ASSERT_EQ(work.count, 1);
-    ASSERT_EQ(work.work.work_busy_get(), 0);
+    EXPECT_EQ(work.count, 1);
+    EXPECT_EQ(work.work.work_busy_get(), 0);
 
-    ASSERT_NO_THROW(work.sync_sem.take(ares::no_wait));
+    EXPECT_NO_THROW(work.sync_sem.take(ares::no_wait));
 }
 
 static void rel_handler(ares::Work *work) {
@@ -98,24 +98,24 @@ TEST(work, sync_queue) {
 
     CounterWork work(rel_handler, work_q.queue_thread_get());
 
-    ASSERT_EQ(work.work.work_busy_get(), 0);
-    ASSERT_FALSE(work.work.work_is_pending());
+    EXPECT_EQ(work.work.work_busy_get(), 0);
+    EXPECT_FALSE(work.work.work_is_pending());
 
     int rc = work_q.submit(&work.work);
-    ASSERT_EQ(rc, 1);
-    ASSERT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
+    EXPECT_EQ(rc, 1);
+    EXPECT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
 
-    ASSERT_EQ(work.count, 0);
+    EXPECT_EQ(work.count, 0);
 
     std::this_thread::sleep_for(1ms);
-    ASSERT_EQ(work.count, 0);
-    ASSERT_EQ(work.work.work_busy_get(), ares::WORK_RUNNING);
+    EXPECT_EQ(work.count, 0);
+    EXPECT_EQ(work.work.work_busy_get(), ares::WORK_RUNNING);
 
     work.rel_sem.give();
-    ASSERT_EQ(work.count, 0);
+    EXPECT_EQ(work.count, 0);
 
-    ASSERT_NO_THROW(work.sync_sem.take());
-    ASSERT_EQ(work.count, 1);
+    EXPECT_NO_THROW(work.sync_sem.take());
+    EXPECT_EQ(work.count, 1);
 }
 
 TEST(work, reentrent_queue) {
@@ -126,22 +126,22 @@ TEST(work, reentrent_queue) {
     CounterWork work(rel_handler, work_q0.queue_thread_get());
 
     int rc = work_q0.submit(&work.work);
-    ASSERT_EQ(rc, 1);
-    ASSERT_EQ(work.count, 0);
+    EXPECT_EQ(rc, 1);
+    EXPECT_EQ(work.count, 0);
 
     std::this_thread::sleep_for(1ms);
-    ASSERT_EQ(work.count, 0);
+    EXPECT_EQ(work.count, 0);
 
     rc = work_q1.submit(&work.work);
-    ASSERT_EQ(rc, 2);
+    EXPECT_EQ(rc, 2);
 
     work.rel_sem.give();
-    ASSERT_NO_THROW(work.sync_sem.take());
-    ASSERT_EQ(work.count, 1);
+    EXPECT_NO_THROW(work.sync_sem.take());
+    EXPECT_EQ(work.count, 1);
 
     work.rel_sem.give();
-    ASSERT_NO_THROW(work.sync_sem.take());
-    ASSERT_EQ(work.count, 2);
+    EXPECT_NO_THROW(work.sync_sem.take());
+    EXPECT_EQ(work.count, 2);
 }
 
 TEST(work, queued_flush) {}
