@@ -44,13 +44,13 @@ struct WorkFlusher {
     WorkFlusher() : work(handle_flush) {}
     Work work;
 
-    ares::semaphore<> sem{0};
+    semaphore<> sem{0};
 };
 
 struct WorkCanceller {
     sys_snode_t node{};
     Work *work{};
-    ares::semaphore<> sem{0};
+    semaphore<> sem{0};
 };
 
 static void flag_clear(uint32_t *flags, uint32_t bit) { *flags &= ~BIT(bit); }
@@ -89,7 +89,7 @@ bool Work::work_flush() {
     lock_.unlock();
 
     if (need_flush) {
-        flusher.sem.lock();
+        flusher.sem.take();
     }
 
     return need_flush;
@@ -124,8 +124,7 @@ int Work::work_busy_get_locked() const {
 }
 
 bool Work::work_flush_locked(WorkFlusher *flusher) {
-    bool need_flush =
-        (flags_get(&flags) & (WORK_QUEUED_BIT | WORK_RUNNING)) != 0u;
+    bool need_flush = (flags_get(&flags) & (WORK_QUEUED | WORK_RUNNING)) != 0u;
 
     if (need_flush) {
         queue->flusher_locked(this, flusher);
