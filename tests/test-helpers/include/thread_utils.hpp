@@ -21,5 +21,6 @@ enum thread_prio {
 
 int change_thread_prio(thread_prio prio);
 int pin_cpu(std::thread &thread, int cpu);
+int pin_cpu(int cpu);
 
 #endif // ARES_THREAD_UTILS_H

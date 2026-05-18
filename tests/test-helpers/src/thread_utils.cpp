@@ -43,7 +43,7 @@ static int set_thread_prio(int new_prio) {
         return -errno;
     }
 
-    printf("    policy=%s, priority=%d\n",
+    printf("Old Policy:\n    policy=%s, priority=%d\n",
            (policy == SCHED_FIFO)    ? "SCHED_FIFO"
            : (policy == SCHED_RR)    ? "SCHED_RR"
            : (policy == SCHED_OTHER) ? "SCHED_OTHER"
@@ -68,7 +68,7 @@ static int set_thread_prio(int new_prio) {
         return -errno;
     }
 
-    printf("    policy=%s, priority=%d\n",
+    printf("New Policy:\n    policy=%s, priority=%d\n",
            (policy == SCHED_FIFO)    ? "SCHED_FIFO"
            : (policy == SCHED_RR)    ? "SCHED_RR"
            : (policy == SCHED_OTHER) ? "SCHED_OTHER"
@@ -102,3 +102,5 @@ int change_thread_prio(thread_prio prio) {
 int pin_cpu(std::thread &thread, int cpu) {
     return pin_cpu_pthread(thread.native_handle(), cpu);
 }
+
+int pin_cpu(int cpu) { return pin_cpu_pthread(pthread_self(), cpu); }

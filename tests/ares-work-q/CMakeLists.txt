@@ -60,7 +60,7 @@ add_executable(
         work_test
         src/work_tests.cpp ${WORK_Q_SRC}
 )
-target_link_libraries(work_test GTest::gtest_main)
+target_link_libraries(work_test GTest::gtest_main ares_test_helpers)
 
 ################################################
 # Discover tests here

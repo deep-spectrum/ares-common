@@ -14,10 +14,12 @@
 #include <atomic>
 #include <gtest/gtest.h>
 #include <memory>
+#include <thread_utils.hpp>
 
 using namespace std::chrono_literals;
 
 constexpr size_t max_sem_cnt = 10;
+constexpr int work_q_core = 1;
 
 struct CounterWork {
     explicit CounterWork(
@@ -164,11 +166,31 @@ TEST(work, reentrent_queue) {
 }
 
 // ReSharper disable once CppUseAuto
-constexpr std::chrono::milliseconds delay = 100ms;
+constexpr auto delay = 100ms;
 
 static void delay_handler(ares::Work *work) {
     std::this_thread::sleep_for(delay);
     counter_handler(work);
+}
+
+bool PredicateCheckWorkBusyFlags(uint32_t val1, uint32_t val2, uint32_t val3) {
+    return (val1 == val2) || (val1 == val3);
+}
+
+testing::AssertionResult PredicateCheckWorkBusy(const char *val1_expr,
+                                                const char *val2_expr,
+                                                const char *val3_expr,
+                                                uint32_t val1, uint32_t val2,
+                                                uint32_t val3) {
+    if (PredicateCheckWorkBusyFlags(val1, val2, val3)) {
+        return testing::AssertionSuccess();
+    }
+
+    return testing::AssertionFailure()
+           << "Expected equality of these values:\n  " << val1_expr
+           << "\n    Which is: " << val1 << "\n  " << val2_expr
+           << "\n    Which is: " << val2 << "\n Or\n  " << val3_expr
+           << "\n    Which is: " << val3;
 }
 
 TEST(work, queued_flush) {
@@ -190,7 +212,10 @@ TEST(work, queued_flush) {
     EXPECT_EQ(*count, 0);
 
     EXPECT_EQ(work0.work.work_busy_get(), ares::WORK_QUEUED);
-    EXPECT_EQ(work1.work.work_busy_get(), ares::WORK_QUEUED);
+
+    // Checking for both since we are at the mercy of the scheduler...
+    EXPECT_PRED_FORMAT3(PredicateCheckWorkBusy, work1.work.work_busy_get(),
+                        ares::WORK_QUEUED, ares::WORK_RUNNING);
     EXPECT_TRUE(work0.work.work_flush());
     EXPECT_FALSE(work1.work.work_flush());
 
