@@ -267,6 +267,8 @@ TEST(work, queued_cancel) {
 
     CounterWork work(rel_handler, work_q.queue_thread_get(), sync_sem, count);
     work.rel_sem = rel_sem;
+    // prevent blocking just in case
+    rel_sem->give();
 
     int rc = work_q.submit(&work.work);
     EXPECT_EQ(rc, 1);
@@ -276,7 +278,26 @@ TEST(work, queued_cancel) {
     EXPECT_EQ(*count, 0);
 }
 
-TEST(work, queued_cancel_sync) {}
+TEST(work, queued_cancel_sync) {
+    auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto rel_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto count = std::make_shared<std::atomic_int>(0);
+
+    ares::WorkQ work_q;
+    work_q.start(nullptr);
+
+    CounterWork work(rel_handler, work_q.queue_thread_get(), sync_sem, count);
+    work.rel_sem = rel_sem;
+
+    EXPECT_FALSE(work.work.work_cancel_sync());
+
+    int rc = work_q.submit(&work.work);
+    EXPECT_EQ(rc, 1);
+    EXPECT_EQ(*count, 0);
+
+    EXPECT_TRUE(work.work.work_cancel_sync());
+    EXPECT_EQ(*count, 0);
+}
 
 TEST(work, delayed_cancel) {
     GTEST_SKIP() << "Functionality not implemented yet\n";
