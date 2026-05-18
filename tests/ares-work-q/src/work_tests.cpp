@@ -228,7 +228,30 @@ TEST(work, queued_flush) {
     EXPECT_FALSE(work1.work.work_is_pending());
 }
 
-TEST(work, running_flush) {}
+TEST(work, running_flush) {
+    auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto count = std::make_shared<std::atomic_int>(0);
+
+    ares::WorkQ work_q;
+    work_q.start(nullptr);
+
+    CounterWork work(delay_handler, work_q.queue_thread_get(), sync_sem, count);
+
+    int rc = work_q.submit(&work.work);
+    EXPECT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
+    EXPECT_EQ(rc, 1);
+    EXPECT_EQ(*count, 0);
+
+    std::this_thread::sleep_for(1ms);
+
+    EXPECT_EQ(work.work.work_busy_get(), ares::WORK_RUNNING);
+    EXPECT_EQ(*count, 0);
+
+    EXPECT_TRUE(work.work.work_flush());
+
+    EXPECT_EQ(*count, 1);
+    EXPECT_NO_THROW(sync_sem->take(ares::no_wait));
+}
 
 TEST(work, delayed_flush) {
     GTEST_SKIP() << "Functionality not implemented yet\n";
