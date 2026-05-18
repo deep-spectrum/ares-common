@@ -17,16 +17,12 @@
 using namespace std::chrono_literals;
 
 struct CounterWork {
-    enum operation {
-        ADD,
-        SUB,
-    };
-
-    explicit CounterWork(const ares::work_handler_t &handler)
-        : sync_sem(0), rel_sem(0), work(handler) {}
+    explicit CounterWork(const ares::work_handler_t &handler,
+                         const std::thread::id inc)
+        : inc_thread(inc), sync_sem(0), rel_sem(0), work(handler) {}
 
     std::atomic_int count = 0;
-    operation op = ADD;
+    std::thread::id inc_thread;
     std::atomic_int resubmits_left = 0;
     ares::semaphore<> sync_sem;
     ares::semaphore<> rel_sem;
@@ -36,19 +32,10 @@ struct CounterWork {
 static void counter_handler(ares::Work *work) {
     auto counter_work = ares::container_of(work, &CounterWork::work);
 
-    switch (counter_work->op) {
-    case CounterWork::ADD: {
+    if (counter_work->inc_thread == std::this_thread::get_id()) {
         ++counter_work->count;
-        break;
-    }
-    case CounterWork::SUB: {
+    } else {
         --counter_work->count;
-        break;
-    }
-    default: {
-        EXPECT_FALSE(true);
-        break;
-    }
     }
 
     --counter_work->resubmits_left;
@@ -78,10 +65,10 @@ TEST(work, null_queue) {
 }
 
 TEST(work, simple_submit) {
-    CounterWork work(counter_handler);
     ares::WorkQ work_q;
-
     work_q.start(nullptr);
+
+    CounterWork work(counter_handler, work_q.queue_thread_get());
 
     ASSERT_EQ(work.work.work_busy_get(), 0);
     ASSERT_FALSE(work.work.work_is_pending());
@@ -106,10 +93,10 @@ static void rel_handler(ares::Work *work) {
 }
 
 TEST(work, sync_queue) {
-    CounterWork work(rel_handler);
     ares::WorkQ work_q;
-
     work_q.start(nullptr);
+
+    CounterWork work(rel_handler, work_q.queue_thread_get());
 
     ASSERT_EQ(work.work.work_busy_get(), 0);
     ASSERT_FALSE(work.work.work_is_pending());
@@ -131,7 +118,31 @@ TEST(work, sync_queue) {
     ASSERT_EQ(work.count, 1);
 }
 
-TEST(work, reentrent_queue) {}
+TEST(work, reentrent_queue) {
+    ares::WorkQ work_q0, work_q1;
+    work_q0.start(nullptr);
+    work_q1.start(nullptr);
+
+    CounterWork work(rel_handler, work_q0.queue_thread_get());
+
+    int rc = work_q0.submit(&work.work);
+    ASSERT_EQ(rc, 1);
+    ASSERT_EQ(work.count, 0);
+
+    std::this_thread::sleep_for(1ms);
+    ASSERT_EQ(work.count, 0);
+
+    rc = work_q1.submit(&work.work);
+    ASSERT_EQ(rc, 2);
+
+    work.rel_sem.give();
+    ASSERT_NO_THROW(work.sync_sem.take());
+    ASSERT_EQ(work.count, 1);
+
+    work.rel_sem.give();
+    ASSERT_NO_THROW(work.sync_sem.take());
+    ASSERT_EQ(work.count, 2);
+}
 
 TEST(work, queued_flush) {}
 
