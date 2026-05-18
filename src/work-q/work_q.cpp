@@ -113,7 +113,7 @@ bool Work::work_cancel_sync() {
     lock_.unlock();
 
     if (need_wait) {
-        canceller.sem.lock();
+        canceller.sem.take();
     }
 
     return pending;
