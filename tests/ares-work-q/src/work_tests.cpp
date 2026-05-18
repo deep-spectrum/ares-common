@@ -10,9 +10,47 @@
 
 #include <ares/work-q/work_q.hpp>
 #include <gtest/gtest.h>
+#include <atomic>
+#include <ares/synchronization/semaphore.hpp>
+#include <ares/util.hpp>
+
+struct CounterWork {
+    enum operation {
+        ADD,
+        SUB,
+    };
+
+    std::atomic_int count = 0;
+    operation op;
+    std::atomic_int resubmits_left = 0;
+    ares::semaphore<> sync_sem;
+    ares::Work work;
+};
 
 static void counter_handler(ares::Work *work) {
-    // todo
+    auto counter_work = ares::container_of(work, &CounterWork::work);
+
+    switch (counter_work->op) {
+        case CounterWork::ADD: {
+            ++counter_work->count;
+            break;
+        }
+        case CounterWork::SUB: {
+            --counter_work->count;
+            break;
+        }
+            default: {
+            EXPECT_FALSE(true);
+            break;
+        }
+    }
+
+    --counter_work->resubmits_left;
+    if (counter_work->resubmits_left > 0) {
+        ares::work_submit_to_queue(nullptr, work);
+    } else {
+        counter_work->sync_sem.give();
+    }
 }
 
 TEST(work, unstarted) {
@@ -31,4 +69,76 @@ TEST(work, null_queue) {
 
     int rc = ares::work_submit_to_queue(nullptr, &work);
     ASSERT_EQ(rc, -EINVAL);
+}
+
+TEST(work, simple_submit) {}
+
+TEST(work, sync_queue) {}
+
+TEST(work, reentrent_queue) {}
+
+TEST(work, queued_flush) {}
+
+TEST(work, running_flush) {}
+
+TEST(work, delayed_flush) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
+
+TEST(work, queued_cancel) {}
+
+TEST(work, queued_cancel_sync) {}
+
+TEST(work, delayed_cancel) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
+
+TEST(work, delayed_cancel_sync) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
+
+TEST(work, delayed_cancel_sync_wait) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
+
+TEST(work, running_cancel) {}
+
+TEST(work, running_cancel_sync) {}
+
+TEST(work, drain_empty) {}
+
+TEST(work, drain_wait) {}
+
+TEST(work, plugged_drain) {}
+
+TEST(work, basic_schedule) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
+
+TEST(work, basic_schedule_running) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
+
+TEST(work, immediate_schedule) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
+
+TEST(work, basic_reschedule) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
+
+TEST(work, immediate_reschedule) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
+
+TEST(work, queue_no_yield) {}
+
+TEST(work, system_queue) {}
+
+TEST(work, system_schedule) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
+
+TEST(work, system_reschedule) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
 }
