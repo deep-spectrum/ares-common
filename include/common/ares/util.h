@@ -148,6 +148,8 @@ extern "C" {
  */
 #define IS_EMPTY(...) Z_IS_EMPTY_(__VA_ARGS__)
 
+#define BIT(n)        (1UL << (n))
+
 #if __cplusplus
 }
 #endif

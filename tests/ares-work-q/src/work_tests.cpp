@@ -8,11 +8,15 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#include <ares/work-q/work_q.hpp>
-#include <gtest/gtest.h>
-#include <atomic>
 #include <ares/synchronization/semaphore.hpp>
 #include <ares/util.hpp>
+#include <ares/work-q/work_q.hpp>
+#include <atomic>
+#include <gtest/gtest.h>
+
+using namespace std::chrono_literals;
+
+static void counter_handler(ares::Work *work);
 
 struct CounterWork {
     enum operation {
@@ -20,8 +24,10 @@ struct CounterWork {
         SUB,
     };
 
+    CounterWork() : work(counter_handler), sync_sem(0) {}
+
     std::atomic_int count = 0;
-    operation op;
+    operation op = ADD;
     std::atomic_int resubmits_left = 0;
     ares::semaphore<> sync_sem;
     ares::Work work;
@@ -31,18 +37,18 @@ static void counter_handler(ares::Work *work) {
     auto counter_work = ares::container_of(work, &CounterWork::work);
 
     switch (counter_work->op) {
-        case CounterWork::ADD: {
-            ++counter_work->count;
-            break;
-        }
-        case CounterWork::SUB: {
-            --counter_work->count;
-            break;
-        }
-            default: {
-            EXPECT_FALSE(true);
-            break;
-        }
+    case CounterWork::ADD: {
+        ++counter_work->count;
+        break;
+    }
+    case CounterWork::SUB: {
+        --counter_work->count;
+        break;
+    }
+    default: {
+        EXPECT_FALSE(true);
+        break;
+    }
     }
 
     --counter_work->resubmits_left;
@@ -71,7 +77,27 @@ TEST(work, null_queue) {
     ASSERT_EQ(rc, -EINVAL);
 }
 
-TEST(work, simple_submit) {}
+TEST(work, simple_submit) {
+    CounterWork work;
+    ares::WorkQ work_q;
+
+    work_q.start(nullptr);
+
+    ASSERT_EQ(work.work.work_busy_get(), 0);
+    ASSERT_FALSE(work.work.work_is_pending());
+
+    int rc = work_q.submit(&work.work);
+    ASSERT_EQ(rc, 1);
+    ASSERT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
+    ASSERT_TRUE(work.work.work_is_pending());
+    ASSERT_EQ(work.count, 0);
+
+    std::this_thread::sleep_for(1ms);
+    ASSERT_EQ(work.count, 1);
+    ASSERT_EQ(work.work.work_busy_get(), 0);
+
+    ASSERT_NO_THROW(work.sync_sem.take(ares::no_wait));
+}
 
 TEST(work, sync_queue) {}
 

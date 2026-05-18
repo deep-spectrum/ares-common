@@ -15,6 +15,7 @@
 #include <ares/data-structures/queue.hpp>
 #include <ares/data-structures/sys/slist.h>
 #include <ares/synchronization/spinlock.hpp>
+#include <ares/util.h>
 #include <chrono>
 #include <functional>
 #include <thread>
@@ -27,6 +28,49 @@ struct Work;
 struct WorkFlusher;
 struct WorkCanceller;
 struct WorkDelayable;
+
+enum WorkStatus : uint32_t {
+
+    /* Bits that represent the work item states.  At least nine of the
+     * combinations are distinct valid stable states.
+     */
+    WORK_RUNNING_BIT = 0,
+    WORK_CANCELING_BIT = 1,
+    WORK_QUEUED_BIT = 2,
+    WORK_DELAYED_BIT = 3,
+    WORK_FLUSHING_BIT = 4,
+
+    WORK_MASK = BIT(WORK_DELAYED_BIT) | BIT(WORK_QUEUED_BIT) |
+                BIT(WORK_RUNNING_BIT) | BIT(WORK_CANCELING_BIT) |
+                BIT(WORK_FLUSHING_BIT),
+
+    /* Static work flags */
+    WORK_DELAYABLE_BIT = 8,
+    WORK_DELAYABLE = BIT(WORK_DELAYED_BIT),
+
+    /* Dynamic work queue flags */
+    WORK_QUEUE_STARTED_BIT = 0,
+    WORK_QUEUE_STARTED = BIT(WORK_QUEUE_STARTED_BIT),
+    WORK_QUEUE_BUSY_BIT = 1,
+    WORK_QUEUE_BUSY = BIT(WORK_QUEUE_BUSY_BIT),
+    WORK_QUEUE_DRAIN_BIT = 2,
+    WORK_QUEUE_DRAIN = BIT(WORK_QUEUE_DRAIN_BIT),
+    WORK_QUEUE_PLUGGED_BIT = 3,
+    WORK_QUEUE_PLUGGED = BIT(WORK_QUEUE_PLUGGED_BIT),
+    WORK_QUEUE_STOP_BIT = 4,
+    WORK_QUEUE_STOP = BIT(WORK_QUEUE_STOP_BIT),
+
+    /* Static work queue flags */
+    WORK_QUEUE_NO_YIELD_BIT = 8,
+    WORK_QUEUE_NO_YIELD = BIT(WORK_QUEUE_NO_YIELD_BIT),
+
+    /* Transient work flags */
+    WORK_RUNNING = BIT(WORK_RUNNING_BIT),
+    WORK_CANCELING = BIT(WORK_CANCELING_BIT),
+    WORK_QUEUED = BIT(WORK_QUEUED_BIT),
+    WORK_DELAYED = BIT(WORK_DELAYED_BIT),
+    WORK_FLUSHING = BIT(WORK_FLUSHING_BIT),
+};
 
 /**
  * The signature for a work item handler function.
