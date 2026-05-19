@@ -3,9 +3,17 @@ on:
   pull_request:
     branches:
       - master
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'tests/**'
   push:
     branches:
       - master
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'tests/**'
   workflow_dispatch:
 
 permissions:
