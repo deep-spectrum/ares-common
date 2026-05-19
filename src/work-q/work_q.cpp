@@ -159,6 +159,16 @@ bool Work::cancel_sync_locked(WorkCanceller *canceller) {
     return ret;
 }
 
+int Work::resubmit() {
+    std::unique_lock lock_(*_lock);
+    if (queue == nullptr) {
+        return -EINVAL;
+    }
+
+    WorkQ *q = nullptr;
+    return WorkQ::submit_locked(this, &q);
+}
+
 #if DELAYABLE_WORK
 WorkDelayable::WorkDelayable(const work_handler_t &handler) : work(handler) {}
 
@@ -518,8 +528,12 @@ void WorkQ::finalize_cancel_locked(Work *work) {
 }
 
 int work_submit_to_queue(WorkQ *queue, Work *work) {
-    if (queue == nullptr) {
+    if (work == nullptr) {
         return -EINVAL;
+    }
+
+    if (queue == nullptr) {
+        return work->resubmit();
     }
 
     return queue->submit(work);

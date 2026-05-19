@@ -90,6 +90,7 @@ struct Work {
     Work() = delete;
     friend class WorkQ;
     friend struct WorkDelayable;
+    friend int work_submit_to_queue(WorkQ *queue, Work *work);
 
     /**
      * @brief Busy state flags from the work item.
@@ -179,6 +180,7 @@ struct Work {
     bool work_flush_locked(WorkFlusher *flusher);
     int cancel_async_locked();
     bool cancel_sync_locked(WorkCanceller *canceller);
+    int resubmit();
 };
 
 #if DELAYABLE_WORK
