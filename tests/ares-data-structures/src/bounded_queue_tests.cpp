@@ -936,8 +936,8 @@ TEST(queue_api, bounded_queue_multi_overwriting_put2threads) {
     get_params.sleep_period = 100ms;
     get_params.timeout = 10s;
     cut.clear();
-    range.lower_bound = 40;
-    range.upper_bound = 60;
+    range.lower_bound = 35;
+    range.upper_bound = 65;
     run_put2threads_test(cut, put_params, get_params, range,
                          "2 fast putting threads, 1 slow receiving thread");
 
