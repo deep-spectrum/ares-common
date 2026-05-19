@@ -454,7 +454,50 @@ TEST(work, drain_wait) {
     EXPECT_EQ(ctx.submit_rc, -EBUSY);
 }
 
-TEST(work, plugged_drain) {}
+TEST(work, plugged_drain) {
+    auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto count = std::make_shared<std::atomic_int>(0);
+
+    ares::WorkQ work_q;
+    work_q.start(nullptr);
+
+    CounterWork work(delay_handler, work_q.queue_thread_get(), sync_sem, count);
+
+    int rc = work_q.submit(&work.work);
+    EXPECT_EQ(rc, 1);
+
+    rc = work_q.queue_drain(true);
+    EXPECT_EQ(rc, 1);
+
+    EXPECT_TRUE(work_q.plugged());
+
+    EXPECT_NO_THROW(sync_sem->take(ares::no_wait));
+    EXPECT_EQ(*count, 1);
+
+    EXPECT_EQ(work_q.get_flags(),
+              ares::WORK_QUEUE_STARTED | ares::WORK_QUEUE_PLUGGED);
+
+    rc = work.work.set_new_work_handler(counter_handler);
+    EXPECT_EQ(rc, 0);
+
+    rc = work_q.submit(&work.work);
+    EXPECT_EQ(rc, -EBUSY);
+
+    rc = work_q.queue_unplug();
+    EXPECT_EQ(rc, 0);
+    EXPECT_FALSE(work_q.plugged());
+
+    rc = work_q.queue_unplug();
+    EXPECT_EQ(rc, -EALREADY);
+    EXPECT_EQ(work_q.get_flags(), ares::WORK_QUEUE_STARTED);
+    EXPECT_FALSE(work_q.plugged());
+
+    rc = work_q.submit(&work.work);
+    EXPECT_EQ(rc, 1);
+
+    EXPECT_NO_THROW(sync_sem->take());
+    EXPECT_EQ(*count, 2);
+}
 
 TEST(work, basic_schedule) {
     GTEST_SKIP() << "Functionality not implemented yet\n";
