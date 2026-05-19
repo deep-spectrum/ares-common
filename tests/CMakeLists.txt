@@ -5,6 +5,7 @@ add_subdirectory(ares-common/internals)
 add_subdirectory(ares-data-structures)
 add_subdirectory(ares-logging)
 add_subdirectory(ares-synchronization)
+add_subdirectory(ares-work-q)
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ares-common/pyutils"
         DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/ares-common/")
