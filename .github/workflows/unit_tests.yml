@@ -1,0 +1,43 @@
+name: Unit Tests
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BUILD_DIR: ares-common-build
+
+
+jobs:
+  Test:
+    name: "Unit Testing"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: chechout
+        uses: actions/checkout@v4
+        with:
+          path: ares-common
+
+      - name: CMake
+        shell: bash
+        run: |
+          cmake -S ares-common/ -B $BUILD_DIR -DTESTS=ON
+
+      - name: Build
+        working-directory: ${{ env.BUILD_DIR }}
+        shell: bash
+        run: |
+          make
+
+      - name: Unit Test
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ctest -j8 --timeout 120 --output-on-failure

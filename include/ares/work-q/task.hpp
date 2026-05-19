@@ -11,13 +11,53 @@
 #ifndef ARES_COMMON_TASK_HPP
 #define ARES_COMMON_TASK_HPP
 
-#include <atomic>
+#include <ares/synchronization/spinlock.hpp>
 #include <chrono>
 #include <functional>
 #include <future>
 #include <string>
 #include <thread>
 #include <utility>
+
+namespace ares {
+/**
+ * @class TaskException
+ * @brief Exception class for task related errors.
+ */
+class TaskException : std::exception {
+  public:
+    /**
+     * Constructor.
+     * @param msg The exception message.
+     */
+    explicit TaskException(const char *msg) : _msg(msg) {}
+
+    /**
+     * The error message or reason.
+     * @return The error message.
+     */
+    [[nodiscard]] const char *what() const noexcept override {
+        return _msg.c_str();
+    }
+
+  private:
+    std::string _msg;
+};
+
+namespace internal {
+template <typename Signature>
+struct FunctionTraits;
+
+template <typename R, typename... Args>
+struct FunctionTraits<R(Args...)> {
+    using ReturnType = R;
+};
+
+template <typename R, typename... Args>
+struct FunctionTraits<R (*)(Args...)> {
+    using ReturnType = R;
+};
+} // namespace internal
 
 /**
  * @class Task
@@ -27,10 +67,42 @@ template <typename Signature>
 class Task {
   public:
     /**
+     * @enum State
+     * Task states
+     */
+    enum State {
+        /**
+         * Task ready to be started or ran.
+         */
+        READY,
+
+        /**
+         * Task is currently running.
+         *
+         * @note This will automatically transition into Task::JOINED if task is
+         * ran with `run()`. Otherwise, in order to transition task into
+         * Task::JOINED, `join()` needs to be called first.
+         */
+        RUNNING,
+
+        /**
+         * Task has been joined and the results are ready to be read.
+         */
+        JOINED,
+    };
+
+    using ReturnType = typename internal::FunctionTraits<Signature>::ReturnType;
+
+    /**
      * Constructor.
      * @param[in] handler The task handler.
+     * @throws TaskException if the handler is nullptr
      */
-    explicit Task(std::function<Signature> handler) : handler(handler) {}
+    explicit Task(std::function<Signature> handler) : _handler(handler) {
+        if (handler == nullptr) {
+            throw TaskException("Task handler cannot be `nullptr`");
+        }
+    }
 
     /**
      * Destructor.
@@ -51,7 +123,7 @@ class Task {
      * Retrieve the name of the task.
      * @return The name of the task.
      */
-    [[nodiscard]] const char *get_name() const;
+    [[nodiscard]] const char *get_name();
 
     /**
      * @brief Marks a task as essential or not.
@@ -71,7 +143,7 @@ class Task {
      * Check if the task is essential.
      * @return The essential status of the thread.
      */
-    [[nodiscard]] bool get_essential() const;
+    [[nodiscard]] bool get_essential();
 
     /**
      * @brief Start task execution.
@@ -118,19 +190,37 @@ class Task {
      */
     [[nodiscard]] std::thread::id get_id() const;
 
+    /**
+     * Get the result of the task after running.
+     * @return The return value of the handler, if any.
+     *
+     * @throws TaskException if the result cannot be determined.
+     * @throws std::excetion Any exception the handler threw.
+     */
+    ReturnType get();
+
+    /**
+     * Get the current state of the task.
+     * @return The current state of the task.
+     */
+    State get_state();
+
   private:
-    std::atomic_bool _locked = false;
-    bool essential = false;
-    std::string name;
-    std::packaged_task<void()> task;
-    std::future<void> future;
-    std::thread thread;
-    std::function<Signature> handler;
+    bool _essential = false;
+    std::string _name;
+    std::packaged_task<ReturnType()> _task;
+    std::future<ReturnType> _future;
+    std::thread _thread;
+    std::thread::id _id;
+    std::function<Signature> _handler;
+
+    SpinLock _state_lock;
+    State _state = READY;
 
     int _join();
 
     template <typename... Args>
-    void init_task(Args &&...args);
+    void _init_task(Args &&...args);
 };
 
 template <typename Signature>
@@ -140,44 +230,52 @@ Task<Signature>::~Task() {
 
 template <typename Signature>
 int Task<Signature>::set_name(std::string new_name) {
-    if (_locked) {
+    std::unique_lock lock(_state_lock);
+    if (_state == RUNNING) {
         return -EBUSY;
     }
-    name = std::move(new_name);
+    _name = std::move(new_name);
     return 0;
 }
 
 template <typename Signature>
-const char *Task<Signature>::get_name() const {
-    return name.c_str();
+const char *Task<Signature>::get_name() {
+    std::unique_lock lock(_state_lock);
+    return _name.c_str();
 }
 
 template <typename Signature>
 int Task<Signature>::set_essential(bool essential_task) {
-    if (_locked) {
+    std::unique_lock lock(_state_lock);
+    if (_state == RUNNING) {
         return -EBUSY;
     }
-    essential = essential_task;
+    _essential = essential_task;
     return 0;
 }
 
 template <typename Signature>
-bool Task<Signature>::get_essential() const {
-    return essential;
+bool Task<Signature>::get_essential() {
+    std::unique_lock lock(_state_lock);
+    return _essential;
 }
 
 template <typename Signature>
 template <typename... Args>
 void Task<Signature>::start(Args &&...args) {
-    init_task(std::forward<Args>(args)...);
-    thread = std::thread(std::move(task));
+    _init_task(std::forward<Args>(args)...);
+    _thread = std::thread(std::move(_task));
+    _id = _thread.get_id();
 }
 
 template <typename Signature>
 template <typename... Args>
 void Task<Signature>::run(Args &&...args) {
-    init_task(std::forward<Args>(args)...);
-    task();
+    _init_task(std::forward<Args>(args)...);
+    _id = std::this_thread::get_id();
+    _task();
+    std::unique_lock lock(_state_lock);
+    _state = JOINED;
 }
 
 template <typename Signature>
@@ -186,7 +284,7 @@ int Task<Signature>::join(const std::chrono::milliseconds timeout) {
         return _join();
     }
 
-    auto status = future.wait_for(timeout);
+    auto status = _future.wait_for(timeout);
     if (status == std::future_status::ready) {
         return _join();
     }
@@ -195,14 +293,36 @@ int Task<Signature>::join(const std::chrono::milliseconds timeout) {
 
 template <typename Signature>
 std::thread::id Task<Signature>::get_id() const {
-    return thread.get_id();
+    return _id;
+}
+
+template <typename Signature>
+typename Task<Signature>::ReturnType Task<Signature>::get() {
+    std::unique_lock lock(_state_lock);
+    if (_state == READY) {
+        throw TaskException(
+            "Cannot get result from task that has not been started");
+    }
+
+    if (_state == RUNNING) {
+        throw TaskException("Join task before getting the result");
+    }
+    _state = READY;
+    return _future.get();
+}
+
+template <typename Signature>
+typename Task<Signature>::State Task<Signature>::get_state() {
+    std::unique_lock lock(_state_lock);
+    return _state;
 }
 
 template <typename Signature>
 int Task<Signature>::_join() {
-    if (thread.joinable()) {
-        thread.join();
-        _locked = false;
+    if (_thread.joinable()) {
+        _thread.join();
+        std::unique_lock lock(_state_lock);
+        _state = JOINED;
         return 0;
     }
     return -EALREADY;
@@ -210,14 +330,27 @@ int Task<Signature>::_join() {
 
 template <typename Signature>
 template <typename... Args>
-void Task<Signature>::init_task(Args &&...args) {
-    _locked = true;
+void Task<Signature>::_init_task(Args &&...args) {
+    std::unique_lock lock(_state_lock);
 
-    auto wrapper = [this](auto &&...bound_args) mutable {
+    if (_state == RUNNING) {
+        throw TaskException(
+            "Cannot run/start a task that is already in the `run` state.");
+    }
+
+    _state = RUNNING;
+
+    auto wrapper = [this, bound_args = std::make_tuple(std::forward<Args>(
+                              args)...)]() -> decltype(auto) {
         try {
-            this->handler(std::forward<decltype(bound_args)>(bound_args)...);
-        } catch (const std::exception &e) {
-            if (essential) {
+            return std::apply(
+                [this](auto &&...unpacked_args) -> decltype(auto) {
+                    return this->_handler(std::forward<decltype(unpacked_args)>(
+                        unpacked_args)...);
+                },
+                bound_args);
+        } catch ([[maybe_unused]] const std::exception &e) {
+            if (_essential) {
                 // todo: log
                 std::abort();
             }
@@ -225,10 +358,10 @@ void Task<Signature>::init_task(Args &&...args) {
         }
     };
 
-    auto bound_task =
-        std::bind(std::move(wrapper), std::forward<Args>(args)...);
-    task = std::packaged_task<void()>(std::move(bound_task));
-    future = task.get_future();
+    auto bound_task = std::move(wrapper);
+    _task = std::packaged_task<ReturnType()>(std::move(bound_task));
+    _future = _task.get_future();
 }
+} // namespace ares
 
 #endif // ARES_COMMON_TASK_HPP

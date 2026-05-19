@@ -36,8 +36,8 @@ extern "C" {
     ((__ln) ? CONTAINER_OF((__ln), __typeof__(*(__cn)), __n) : NULL)
 #else
 #define Z_GENLIST_CONTAINER(__ln, __cn, __n)                                   \
-    ((__ln) ? container_of((__ln),                                             \
-                           &std::remove_reference_t<decltype(*(__cn))>::__n)   \
+    ((__ln) ? ares::container_of(                                              \
+                  (__ln), &std::remove_reference_t<decltype(*(__cn))>::__n)    \
             : nullptr)
 #endif
 

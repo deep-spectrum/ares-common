@@ -1,3 +1,6 @@
 .idea/
 docs/doxy-docs/
 .venv/
+cmake-build*
+build*
+__pycache__

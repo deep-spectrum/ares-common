@@ -17,6 +17,7 @@
 
 namespace py = pybind11;
 
+namespace ares {
 /**
  * @struct StructParam
  * @tparam T The type of the value
@@ -65,9 +66,11 @@ void from_kwargs(const py::kwargs &kwargs, Args &&...args) {
  * @cond doxygen_suppress
  */
 #define Z_SP(field_)                                                           \
-    StructParam<decltype(field_)> { #field_, &(field_) }
+    ares::StructParam<decltype(field_)> { #field_, &(field_) }
 #define Z_SP_CONTAINER(field_, container_)                                     \
-    StructParam<decltype((container_).field_)> { #field_, &(container_).field_ }
+    ares::StructParam<decltype((container_).field_)> {                         \
+#field_, &(container_).field_                                          \
+    }
 /**
  * @endcond
  */
@@ -85,6 +88,18 @@ void from_kwargs(const py::kwargs &kwargs, Args &&...args) {
 #define SP(field_, container_...)                                              \
     COND_CODE_0(IS_EMPTY(container_), (Z_SP_CONTAINER(field_, container_)),    \
                 (Z_SP(field_)))
+
+/**
+ * @brief Wraps a field into a StructParam struct with a custom name.
+ *
+ * Used in place of SP() if the python side name is different from the struct
+ * parameter name.
+ *
+ * @param name_ The kwarg key to check for.
+ * @param container_ The struct parameter to store the result in.
+ */
+#define SP_NAMED(name_, container_)                                            \
+    ares::StructParam<decltype(container_)> { #name_, &(container_) }
 
 /**
  * @struct NamedValue
@@ -181,10 +196,10 @@ py::dict to_dict(Args &&...args) {
  * @cond doxygen_suppress
  */
 #define Z_NV(field_, check_)                                                   \
-    NamedValue<decltype(field_)> { #field_, field_, check_ }
+    ares::NamedValue<decltype(field_)> { #field_, field_, check_ }
 
 #define Z_NV_CONTAINER(field_, container_, check_)                             \
-    NamedValue<decltype((container_).field_)> {                                \
+    ares::NamedValue<decltype((container_).field_)> {                          \
 #field_, (container_).field_, check_                                   \
     }
 /**
@@ -236,5 +251,6 @@ static py::tuple array_to_tuple(const T *data, size_t count) {
     }
     return t;
 }
+} // namespace ares
 
 #endif // ARES_PYUTIL_HPP

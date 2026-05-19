@@ -15,6 +15,7 @@
 #include <ares/data-structures/queue.hpp>
 #include <ares/data-structures/sys/slist.h>
 #include <ares/synchronization/spinlock.hpp>
+#include <ares/util.h>
 #include <chrono>
 #include <functional>
 #include <thread>
@@ -27,6 +28,49 @@ struct Work;
 struct WorkFlusher;
 struct WorkCanceller;
 struct WorkDelayable;
+
+enum WorkStatus : uint32_t {
+
+    /* Bits that represent the work item states.  At least nine of the
+     * combinations are distinct valid stable states.
+     */
+    WORK_RUNNING_BIT = 0,
+    WORK_CANCELING_BIT = 1,
+    WORK_QUEUED_BIT = 2,
+    WORK_DELAYED_BIT = 3,
+    WORK_FLUSHING_BIT = 4,
+
+    WORK_MASK = BIT(WORK_DELAYED_BIT) | BIT(WORK_QUEUED_BIT) |
+                BIT(WORK_RUNNING_BIT) | BIT(WORK_CANCELING_BIT) |
+                BIT(WORK_FLUSHING_BIT),
+
+    /* Static work flags */
+    WORK_DELAYABLE_BIT = 8,
+    WORK_DELAYABLE = BIT(WORK_DELAYED_BIT),
+
+    /* Dynamic work queue flags */
+    WORK_QUEUE_STARTED_BIT = 0,
+    WORK_QUEUE_STARTED = BIT(WORK_QUEUE_STARTED_BIT),
+    WORK_QUEUE_BUSY_BIT = 1,
+    WORK_QUEUE_BUSY = BIT(WORK_QUEUE_BUSY_BIT),
+    WORK_QUEUE_DRAIN_BIT = 2,
+    WORK_QUEUE_DRAIN = BIT(WORK_QUEUE_DRAIN_BIT),
+    WORK_QUEUE_PLUGGED_BIT = 3,
+    WORK_QUEUE_PLUGGED = BIT(WORK_QUEUE_PLUGGED_BIT),
+    WORK_QUEUE_STOP_BIT = 4,
+    WORK_QUEUE_STOP = BIT(WORK_QUEUE_STOP_BIT),
+
+    /* Static work queue flags */
+    WORK_QUEUE_NO_YIELD_BIT = 8,
+    WORK_QUEUE_NO_YIELD = BIT(WORK_QUEUE_NO_YIELD_BIT),
+
+    /* Transient work flags */
+    WORK_RUNNING = BIT(WORK_RUNNING_BIT),
+    WORK_CANCELING = BIT(WORK_CANCELING_BIT),
+    WORK_QUEUED = BIT(WORK_QUEUED_BIT),
+    WORK_DELAYED = BIT(WORK_DELAYED_BIT),
+    WORK_FLUSHING = BIT(WORK_FLUSHING_BIT),
+};
 
 /**
  * The signature for a work item handler function.
@@ -46,6 +90,7 @@ struct Work {
     Work() = delete;
     friend class WorkQ;
     friend struct WorkDelayable;
+    friend int work_submit_to_queue(WorkQ *queue, Work *work);
 
     /**
      * @brief Busy state flags from the work item.
@@ -121,6 +166,18 @@ struct Work {
      */
     bool work_cancel_sync();
 
+    /**
+     * @brief Set a new work handler.
+     *
+     * Sets a new work handler as long as the work item is idle and not
+     * scheduled or queued.
+     *
+     * @param[in] handler_ The new work handler.
+     * @return 0 on success.
+     * @return -EBUSY if the work item is busy.
+     */
+    int set_new_work_handler(const work_handler_t &handler_);
+
   private:
     // this is so the lock doesn't get destroyed before objects of this type
     std::shared_ptr<SpinLock> _lock;
@@ -135,6 +192,7 @@ struct Work {
     bool work_flush_locked(WorkFlusher *flusher);
     int cancel_async_locked();
     bool cancel_sync_locked(WorkCanceller *canceller);
+    int resubmit();
 };
 
 #if DELAYABLE_WORK
@@ -352,6 +410,18 @@ class WorkQ {
      */
     [[nodiscard]] bool plugged() const;
 
+    /**
+     * @brief Work queue flags
+     *
+     * Retrieves the current flags bitmask of the work queue.
+     *
+     * @return The current flags of the work queue.
+     *
+     * @note This is a live snapshot of state, which may change before the
+     * result is checked. Use locks where appropriate.
+     */
+    [[nodiscard]] uint32_t get_flags() const;
+
     friend struct Work;
     friend struct WorkDelayable;
 
@@ -381,7 +451,7 @@ class WorkQ {
     static void finalize_cancel_locked(Work *work);
 };
 
-#if SYS_WORK_QUEUE
+#if defined(SYS_WORK_QUEUE)
 extern WorkQ sys_work_q;
 
 int work_submit(Work *work);

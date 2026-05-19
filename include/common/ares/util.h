@@ -31,8 +31,8 @@ extern "C" {
 /**
  * @brief Stringifies the macro input.
  *
- * Calls stringify on a macro. This is useful where the macro name needs to be
- * stringified, but not what it expands to.
+ * Calls stringify on a macro. This is useful where the macro value needs to be
+ * stringified.
  *
  * @param x The macro to stringify.
  */
@@ -147,6 +147,8 @@ extern "C" {
  * @param ... macro to check for emptiness (may be `__VA_ARGS__`)
  */
 #define IS_EMPTY(...) Z_IS_EMPTY_(__VA_ARGS__)
+
+#define BIT(n)        (1UL << (n))
 
 #if __cplusplus
 }

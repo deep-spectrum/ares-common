@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <vector>
 
+namespace ares {
 #if defined(USE_PYTHON_LOGGERS)
 #include <memory>
 class PieceOfShitIdiom;
@@ -106,5 +107,6 @@ class Logger {
     void _log_crit(const char *msg) const;
 #endif // defined(USE_PYTHON_LOGGERS)
 };
+} // namespace ares
 
 #endif // ARES_COMMON_LOGGER_HPP

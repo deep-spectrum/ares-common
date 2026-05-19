@@ -35,12 +35,21 @@ class SpinLock {
      * Attempt to lock the spinlock.
      * @return `true` if the spinlock was locked. `false` otherwise.
      */
-    bool try_lock() { return _locked.test_and_set(std::memory_order_acquire); }
+    bool try_lock() {
+        bool ret = _locked.test_and_set(std::memory_order_acquire);
+        return !ret;
+    }
 
     /**
      * Unlock the spinlock.
      */
     void unlock() { _locked.clear(std::memory_order_release); }
+
+#if __cplusplus >= 202002L
+    [[nodiscard]] bool locked() const {
+        return _locked.test(std::memory_order_acquire);
+    }
+#endif
 };
 } // namespace ares
 

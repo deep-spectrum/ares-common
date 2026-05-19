@@ -11,6 +11,10 @@
 #ifndef ARES_UTIL_HPP
 #define ARES_UTIL_HPP
 
+#include <chrono>
+#include <cstddef>
+
+namespace ares {
 /**
  * Get a pointer to a structure containing the element.
  *
@@ -39,5 +43,17 @@ Parent *container_of(Member *ptr, Member Parent::*member_ptr) {
         &(static_cast<Parent *>(nullptr)->*member_ptr));
     return reinterpret_cast<Parent *>(reinterpret_cast<char *>(ptr) - offset);
 }
+
+/**
+ * Wait a specified amount of time without yielding CPU time.
+ * @param[in] timeout The time to wait for.
+ */
+inline void spin_wait(const std::chrono::milliseconds &timeout) {
+    auto now = std::chrono::steady_clock::now;
+    auto start = now();
+    while (now() < (start + timeout))
+        ;
+}
+} // namespace ares
 
 #endif // ARES_UTIL_HPP

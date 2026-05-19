@@ -18,55 +18,10 @@
 #include <utility>
 
 namespace ares {
-#define BIT(n) (1UL << (n))
-
-enum {
-
-    /* Bits that represent the work item states.  At least nine of the
-     * combinations are distinct valid stable states.
-     */
-    WORK_RUNNING_BIT = 0,
-    WORK_CANCELING_BIT = 1,
-    WORK_QUEUED_BIT = 2,
-    WORK_DELAYED_BIT = 3,
-    WORK_FLUSHING_BIT = 4,
-
-    WORK_MASK = BIT(WORK_DELAYED_BIT) | BIT(WORK_QUEUED_BIT) |
-                BIT(WORK_RUNNING_BIT) | BIT(WORK_CANCELING_BIT) |
-                BIT(WORK_FLUSHING_BIT),
-
-    /* Static work flags */
-    WORK_DELAYABLE_BIT = 8,
-    WORK_DELAYABLE = BIT(WORK_DELAYED_BIT),
-
-    /* Dynamic work queue flags */
-    WORK_QUEUE_STARTED_BIT = 0,
-    WORK_QUEUE_STARTED = BIT(WORK_QUEUE_STARTED_BIT),
-    WORK_QUEUE_BUSY_BIT = 1,
-    WORK_QUEUE_BUSY = BIT(WORK_QUEUE_BUSY_BIT),
-    WORK_QUEUE_DRAIN_BIT = 2,
-    WORK_QUEUE_DRAIN = BIT(WORK_QUEUE_DRAIN_BIT),
-    WORK_QUEUE_PLUGGED_BIT = 3,
-    WORK_QUEUE_PLUGGED = BIT(WORK_QUEUE_PLUGGED_BIT),
-    WORK_QUEUE_STOP_BIT = 4,
-    WORK_QUEUE_STOP = BIT(WORK_QUEUE_STOP_BIT),
-
-    /* Static work queue flags */
-    WORK_QUEUE_NO_YIELD_BIT = 8,
-    WORK_QUEUE_NO_YIELD = BIT(WORK_QUEUE_NO_YIELD_BIT),
-
-    /* Transient work flags */
-    WORK_RUNNING = BIT(WORK_RUNNING_BIT),
-    WORK_CANCELING = BIT(WORK_CANCELING_BIT),
-    WORK_QUEUED = BIT(WORK_QUEUED_BIT),
-    WORK_DELAYED = BIT(WORK_DELAYED_BIT),
-    WORK_FLUSHING = BIT(WORK_FLUSHING_BIT),
-};
-
 static std::shared_ptr<SpinLock> lock = std::make_shared<SpinLock>();
 static sys_slist_t pending_cancels;
 
-#if SYS_WORK_QUEUE
+#if defined(SYS_WORK_QUEUE)
 WorkQ sys_work_q;
 struct PreMainCaller {
     PreMainCaller() {
@@ -89,13 +44,13 @@ struct WorkFlusher {
     WorkFlusher() : work(handle_flush) {}
     Work work;
 
-    ares::semaphore<> sem{0};
+    semaphore<> sem{0};
 };
 
 struct WorkCanceller {
     sys_snode_t node{};
     Work *work{};
-    ares::semaphore<> sem{0};
+    semaphore<> sem{0};
 };
 
 static void flag_clear(uint32_t *flags, uint32_t bit) { *flags &= ~BIT(bit); }
@@ -134,7 +89,7 @@ bool Work::work_flush() {
     lock_.unlock();
 
     if (need_flush) {
-        flusher.sem.lock();
+        flusher.sem.take();
     }
 
     return need_flush;
@@ -158,10 +113,21 @@ bool Work::work_cancel_sync() {
     lock_.unlock();
 
     if (need_wait) {
-        canceller.sem.lock();
+        canceller.sem.take();
     }
 
     return pending;
+}
+
+int Work::set_new_work_handler(const work_handler_t &handler_) {
+    std::unique_lock lock_(*_lock);
+
+    if (flags_get(&flags) != 0) {
+        return -EBUSY;
+    }
+
+    this->handler = handler_;
+    return 0;
 }
 
 int Work::work_busy_get_locked() const {
@@ -169,8 +135,7 @@ int Work::work_busy_get_locked() const {
 }
 
 bool Work::work_flush_locked(WorkFlusher *flusher) {
-    bool need_flush =
-        (flags_get(&flags) & (WORK_QUEUED_BIT | WORK_RUNNING)) != 0u;
+    bool need_flush = (flags_get(&flags) & (WORK_QUEUED | WORK_RUNNING)) != 0u;
 
     if (need_flush) {
         queue->flusher_locked(this, flusher);
@@ -203,6 +168,16 @@ bool Work::cancel_sync_locked(WorkCanceller *canceller) {
     }
 
     return ret;
+}
+
+int Work::resubmit() {
+    std::unique_lock lock_(*_lock);
+    if (queue == nullptr) {
+        return -EINVAL;
+    }
+
+    WorkQ *q = nullptr;
+    return WorkQ::submit_locked(this, &q);
 }
 
 #if DELAYABLE_WORK
@@ -292,6 +267,10 @@ WorkQ::~WorkQ() {
 }
 
 int WorkQ::submit(Work *work) {
+    if (work == nullptr) {
+        return -EINVAL;
+    }
+
     std::unique_lock lock_(*lock);
     WorkQ *queue = this;
     return submit_locked(work, &queue);
@@ -348,6 +327,10 @@ int WorkQ::queue_drain(bool plug) {
     int ret = 0;
     std::unique_lock lock_(*lock);
 
+    if (!flag_test(&flags, WORK_QUEUE_STARTED_BIT)) {
+        return -ENODEV;
+    }
+
     if (((flags_get(&flags) & (WORK_QUEUE_BUSY | WORK_QUEUE_DRAIN)) != 0) ||
         plug || !sys_slist_is_empty(&pending)) {
         flag_set(&flags, WORK_QUEUE_DRAIN_BIT);
@@ -397,6 +380,11 @@ int WorkQ::stop(const std::chrono::milliseconds &timeout) {
 bool WorkQ::plugged() const {
     std::unique_lock lock_(*_lock);
     return (flags_get(&flags) & WORK_QUEUE_PLUGGED) != 0u;
+}
+
+uint32_t WorkQ::get_flags() const {
+    std::unique_lock lock_(*_lock);
+    return flags_get(&flags);
 }
 
 int WorkQ::submit_locked(Work *work, WorkQ **queue) {
@@ -560,8 +548,12 @@ void WorkQ::finalize_cancel_locked(Work *work) {
 }
 
 int work_submit_to_queue(WorkQ *queue, Work *work) {
-    if (queue == nullptr) {
+    if (work == nullptr) {
         return -EINVAL;
+    }
+
+    if (queue == nullptr) {
+        return work->resubmit();
     }
 
     return queue->submit(work);

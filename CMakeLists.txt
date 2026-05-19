@@ -8,6 +8,12 @@ set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
         "${CMAKE_CURRENT_SOURCE_DIR}/include/common"
         CACHE INTERNAL "Submodule Global Headers")
 
+option(TESTS "Include unit tests in the build" OFF)
+
+# The idiots of the C++ standard didn't think about thread priority when
+# implementing conditional variables. Fucking idiots...
+option(RT_TESTS "Add realtime tests" OFF)
+
 ###########################################
 # Logging
 ###########################################
@@ -122,3 +128,8 @@ add_library(ares_work_q STATIC src/work-q/work_q.cpp)
 set_target_properties(ares_work_q PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(ares_work_q PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_definitions(ares_work_q PUBLIC SYS_WORK_QUEUE=${_SYS_WORK_QUEUE} DELAYABLE_WORK=${_DELAYABLE_WORK})
+
+if (TESTS)
+    add_subdirectory(tests)
+    enable_testing()
+endif ()
