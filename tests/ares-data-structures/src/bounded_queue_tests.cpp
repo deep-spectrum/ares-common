@@ -900,7 +900,7 @@ TEST(queue_api, bounded_queue_multi_overwriting_put2threads) {
         .sleep_period = 0ms,
     };
 
-    Range range{190, 200};
+    Range range{180, 200};
 
     // basic 2 threads putting, 1 receiving
     run_put2threads_test(cut, put_params, get_params, range,

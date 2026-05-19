@@ -40,4 +40,4 @@ jobs:
       - name: Unit Test
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          ctest -j8 --timeout 120
+          ctest -j8 --timeout 120 --output-on-failure
