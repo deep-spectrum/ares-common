@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  BUILD_DIR: ares-common-build
+
 
 jobs:
   Test:
@@ -26,14 +29,15 @@ jobs:
       - name: CMake
         shell: bash
         run: |
-          cmake -S ares-common/ -B ares-common-build -DTESTS=ON
+          cmake -S ares-common/ -B $BUILD_DIR -DTESTS=ON
 
       - name: Build
+        working-directory: ${{ env.BUILD_DIR }}
         shell: bash
         run: |
           make
 
       - name: Unit Test
-        working-directory: ares-common-build
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
           ctest -j8 --timeout 120
