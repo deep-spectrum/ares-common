@@ -54,12 +54,14 @@ add_executable(
         work_queue_test
         src/work_queue_tests.cpp ${WORK_Q_SRC}
 )
+target_compile_definitions(work_queue_test PRIVATE SYS_WORK_QUEUE=1)
 target_link_libraries(work_queue_test GTest::gtest_main)
 
 add_executable(
         work_test
         src/work_tests.cpp ${WORK_Q_SRC}
 )
+target_compile_definitions(work_test PRIVATE SYS_WORK_QUEUE=1)
 target_link_libraries(work_test GTest::gtest_main ares_test_helpers)
 
 ################################################

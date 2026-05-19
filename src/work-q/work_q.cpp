@@ -21,7 +21,7 @@ namespace ares {
 static std::shared_ptr<SpinLock> lock = std::make_shared<SpinLock>();
 static sys_slist_t pending_cancels;
 
-#if SYS_WORK_QUEUE
+#if defined(SYS_WORK_QUEUE)
 WorkQ sys_work_q;
 struct PreMainCaller {
     PreMainCaller() {
@@ -267,6 +267,10 @@ WorkQ::~WorkQ() {
 }
 
 int WorkQ::submit(Work *work) {
+    if (work == nullptr) {
+        return -EINVAL;
+    }
+
     std::unique_lock lock_(*lock);
     WorkQ *queue = this;
     return submit_locked(work, &queue);

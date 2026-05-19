@@ -94,6 +94,8 @@ TEST(work, simple_submit) {
     EXPECT_EQ(work.work.work_busy_get(), 0);
 
     EXPECT_NO_THROW(sync_sem->take(ares::no_wait));
+
+    rc =
 }
 
 static void rel_handler(ares::Work *work) {
@@ -519,9 +521,32 @@ TEST(work, immediate_reschedule) {
     GTEST_SKIP() << "Functionality not implemented yet\n";
 }
 
-TEST(work, queue_no_yield) {}
+TEST(work, queue_no_yield) {
+    GTEST_SKIP() << "Functionality not implemented yet\n";
+}
 
-TEST(work, system_queue) {}
+TEST(work, system_queue) {
+    auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto count = std::make_shared<std::atomic_int>(0);
+
+    CounterWork work(counter_handler, ares::sys_work_q.queue_thread_get(),
+                     sync_sem, count);
+    EXPECT_EQ(work.work.work_busy_get(), 0);
+
+    int rc = ares::work_submit(&work.work);
+    EXPECT_EQ(rc, 1);
+    EXPECT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
+    EXPECT_EQ(*count, 0);
+
+    std::this_thread::sleep_for(1ms);
+    EXPECT_EQ(*count, 1);
+    EXPECT_EQ(work.work.work_busy_get(), 0);
+
+    rc = ares::work_submit(nullptr);
+    EXPECT_EQ(rc, -EINVAL);
+
+    EXPECT_NO_THROW(sync_sem->take(ares::no_wait));
+}
 
 TEST(work, system_schedule) {
     GTEST_SKIP() << "Functionality not implemented yet\n";

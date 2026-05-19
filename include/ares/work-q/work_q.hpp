@@ -451,7 +451,7 @@ class WorkQ {
     static void finalize_cancel_locked(Work *work);
 };
 
-#if SYS_WORK_QUEUE
+#if defined(SYS_WORK_QUEUE)
 extern WorkQ sys_work_q;
 
 int work_submit(Work *work);
