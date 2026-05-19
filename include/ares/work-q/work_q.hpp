@@ -398,6 +398,18 @@ class WorkQ {
      */
     [[nodiscard]] bool plugged() const;
 
+    /**
+     * @brief Work queue flags
+     *
+     * Retrieves the current flags bitmask of the work queue.
+     *
+     * @return The current flags of the work queue.
+     *
+     * @note This is a live snapshot of state, which may change before the
+     * result is checked. Use locks where appropriate.
+     */
+    [[nodiscard]] uint32_t get_flags() const;
+
     friend struct Work;
     friend struct WorkDelayable;
 

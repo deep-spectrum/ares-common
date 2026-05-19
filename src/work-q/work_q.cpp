@@ -367,6 +367,11 @@ bool WorkQ::plugged() const {
     return (flags_get(&flags) & WORK_QUEUE_PLUGGED) != 0u;
 }
 
+uint32_t WorkQ::get_flags() const {
+    std::unique_lock lock_(*_lock);
+    return flags_get(&flags);
+}
+
 int WorkQ::submit_locked(Work *work, WorkQ **queue) {
     int ret = 0;
 
