@@ -44,8 +44,8 @@ static void counter_handler(ares::Work *work) {
         --(*counter_work->count);
     }
 
-    --counter_work->resubmits_left;
     if (counter_work->resubmits_left > 0) {
+        --counter_work->resubmits_left;
         EXPECT_EQ(ares::work_submit_to_queue(nullptr, work), 2);
     } else {
         counter_work->sync_sem->give();
@@ -409,7 +409,50 @@ TEST(work, drain_empty) {
     EXPECT_EQ(work_q.queue_drain(false), 0);
 }
 
-TEST(work, drain_wait) {}
+struct TestDrainWait {
+    TestDrainWait(const ares::work_handler_t &handler,
+                  const std::thread::id inc,
+                  const std::shared_ptr<ares::semaphore<max_sem_cnt>> &s_sem,
+                  const std::shared_ptr<std::atomic_int> &cnt)
+        : work(handler, inc, s_sem, cnt) {}
+
+    CounterWork work;
+    int submit_rc = INT_MAX;
+};
+
+static void test_drain_wait_cb(TestDrainWait &ctx, ares::WorkQ &q,
+                               std::chrono::milliseconds timeout) {
+    std::this_thread::sleep_for(timeout);
+    ctx.submit_rc = q.submit(&ctx.work.work);
+}
+
+TEST(work, drain_wait) {
+    auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto count = std::make_shared<std::atomic_int>(0);
+
+    ares::WorkQ work_q;
+    work_q.start(nullptr);
+
+    TestDrainWait ctx(delay_handler, work_q.queue_thread_get(), sync_sem,
+                      count);
+    ctx.work.resubmits_left = 1;
+
+    int rc = work_q.submit(&ctx.work.work);
+    EXPECT_EQ(rc, 1);
+    EXPECT_EQ(*count, 0);
+
+    std::thread t(test_drain_wait_cb, std::ref(ctx), std::ref(work_q), 10ms);
+
+    rc = work_q.queue_drain(false);
+    EXPECT_EQ(rc, 1);
+
+    t.join();
+
+    EXPECT_NO_THROW(sync_sem->take(ares::no_wait));
+
+    EXPECT_EQ(*count, 2);
+    EXPECT_EQ(ctx.submit_rc, -EBUSY);
+}
 
 TEST(work, plugged_drain) {}
 
