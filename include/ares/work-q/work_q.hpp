@@ -166,6 +166,18 @@ struct Work {
      */
     bool work_cancel_sync();
 
+    /**
+     * @brief Set a new work handler.
+     *
+     * Sets a new work handler as long as the work item is idle and not
+     * scheduled or queued.
+     *
+     * @param[in] handler_ The new work handler.
+     * @return 0 on success.
+     * @return -EBUSY if the work item is busy.
+     */
+    int set_new_work_handler(const work_handler_t &handler_);
+
   private:
     // this is so the lock doesn't get destroyed before objects of this type
     std::shared_ptr<SpinLock> _lock;

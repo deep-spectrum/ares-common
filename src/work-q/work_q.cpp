@@ -119,6 +119,17 @@ bool Work::work_cancel_sync() {
     return pending;
 }
 
+int Work::set_new_work_handler(const work_handler_t &handler_) {
+    std::unique_lock lock_(*_lock);
+
+    if (flags_get(&flags) != 0) {
+        return -EBUSY;
+    }
+
+    this->handler = handler_;
+    return 0;
+}
+
 int Work::work_busy_get_locked() const {
     return static_cast<int>(flags_get(&flags) & WORK_MASK);
 }
