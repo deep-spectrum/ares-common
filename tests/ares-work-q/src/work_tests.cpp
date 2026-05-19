@@ -402,7 +402,12 @@ TEST(work, running_cancel_sync) {
     EXPECT_EQ(ctx.work.work.work_busy_get(), 0);
 }
 
-TEST(work, drain_empty) {}
+TEST(work, drain_empty) {
+    ares::WorkQ work_q;
+    work_q.start(nullptr);
+
+    EXPECT_EQ(work_q.queue_drain(false), 0);
+}
 
 TEST(work, drain_wait) {}
 
