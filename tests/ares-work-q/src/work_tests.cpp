@@ -95,7 +95,23 @@ TEST(work, simple_submit) {
 
     EXPECT_NO_THROW(sync_sem->take(ares::no_wait));
 
-    rc =
+    rc = ares::work_submit_to_queue(&work_q, &work.work);
+    EXPECT_EQ(rc, 1);
+    EXPECT_EQ(work.work.work_busy_get(), ares::WORK_QUEUED);
+    EXPECT_TRUE(work.work.work_is_pending());
+    EXPECT_EQ(*count, 1);
+
+    std::this_thread::sleep_for(1ms);
+    EXPECT_EQ(*count, 2);
+    EXPECT_EQ(work.work.work_busy_get(), 0);
+
+    EXPECT_NO_THROW(sync_sem->take(ares::no_wait));
+
+    rc = ares::work_submit_to_queue(&work_q, nullptr);
+    EXPECT_EQ(rc, -EINVAL);
+
+    rc = work_q.submit(nullptr);
+    EXPECT_EQ(rc, -EINVAL);
 }
 
 static void rel_handler(ares::Work *work) {
