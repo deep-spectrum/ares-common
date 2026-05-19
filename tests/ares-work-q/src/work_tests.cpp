@@ -318,13 +318,12 @@ struct TestRunningCancelTimer {
         : work(handler, inc, s_sem, cnt) {}
 
     CounterWork work;
-    int submit_rc = 0;
-    int busy_rc = 0;
+    int submit_rc = INT_MAX;
+    int busy_rc = INT_MAX;
 };
 
 static void test_running_cancel_cb(TestRunningCancelTimer &ctx, ares::WorkQ &q,
                                    std::chrono::milliseconds delay_) {
-    // change_thread_prio(HIGH);
     std::this_thread::sleep_for(delay_);
 
     ctx.busy_rc = ctx.work.work.work_busy_get();
@@ -336,8 +335,6 @@ TEST(work, running_cancel) {
     auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
     auto rel_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
     auto count = std::make_shared<std::atomic_int>(0);
-
-    // change_thread_prio(MED);
 
     ares::WorkQ work_q;
     work_q.start(nullptr);
@@ -353,8 +350,6 @@ TEST(work, running_cancel) {
     std::this_thread::sleep_for(1ms);
     EXPECT_EQ(*count, 0);
 
-    ctx.busy_rc = INT_MAX;
-    ctx.submit_rc = INT_MAX;
     std::thread t(test_running_cancel_cb, std::ref(ctx), std::ref(work_q),
                   10ms);
 
@@ -373,7 +368,39 @@ TEST(work, running_cancel) {
     t.join();
 }
 
-TEST(work, running_cancel_sync) {}
+TEST(work, running_cancel_sync) {
+    auto sync_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto rel_sem = std::make_shared<ares::semaphore<max_sem_cnt>>(0);
+    auto count = std::make_shared<std::atomic_int>(0);
+
+    ares::WorkQ work_q;
+    work_q.start(nullptr);
+
+    TestRunningCancelTimer ctx(rel_handler, work_q.queue_thread_get(), sync_sem,
+                               count);
+    ctx.work.rel_sem = rel_sem;
+
+    int rc = work_q.submit(&ctx.work.work);
+    EXPECT_EQ(rc, 1);
+    EXPECT_EQ(*count, 0);
+
+    std::this_thread::sleep_for(1ms);
+    EXPECT_EQ(*count, 0);
+
+    std::thread t(test_running_cancel_cb, std::ref(ctx), std::ref(work_q),
+                  10ms);
+
+    EXPECT_TRUE(ctx.work.work.work_cancel_sync());
+    EXPECT_EQ(*count, 1);
+
+    t.join();
+
+    EXPECT_NO_THROW(sync_sem->take(ares::no_wait));
+    EXPECT_EQ(ctx.busy_rc, ares::WORK_RUNNING | ares::WORK_CANCELING);
+    EXPECT_EQ(ctx.submit_rc, -EBUSY);
+
+    EXPECT_EQ(ctx.work.work.work_busy_get(), 0);
+}
 
 TEST(work, drain_empty) {}
 
