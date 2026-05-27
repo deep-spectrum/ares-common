@@ -135,6 +135,7 @@ target_compile_definitions(ares_work_q PUBLIC SYS_WORK_QUEUE=${_SYS_WORK_QUEUE} 
 
 add_library(ares_allocators STATIC
         src/allocators/align_allocator.cpp
+        src/allocators/page_allocator.cpp
 )
 set_target_properties(ares_allocators PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(ares_allocators PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
