@@ -54,6 +54,18 @@ inline void spin_wait(const std::chrono::milliseconds &timeout) {
     while (now() < (start + timeout))
         ;
 }
+
+/**
+ * Check if a value is a power of 2.
+ *
+ * @param[in] x Value to check if power of 2.
+ *
+ * @return `true` if the value is a power of 2.
+ * @return `false` otherwise.
+ */
+inline bool power_of_2(const uintmax_t x) {
+    return (x != 0) && ((x & (x - 1)) == 0);
+}
 } // namespace ares
 
 #endif // ARES_UTIL_HPP

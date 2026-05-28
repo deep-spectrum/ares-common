@@ -129,6 +129,21 @@ set_target_properties(ares_work_q PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(ares_work_q PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_definitions(ares_work_q PUBLIC SYS_WORK_QUEUE=${_SYS_WORK_QUEUE} DELAYABLE_WORK=${_DELAYABLE_WORK})
 
+###########################################
+# Allocators
+###########################################
+
+add_library(ares_allocators STATIC
+        src/allocators/align_allocator.cpp
+        src/allocators/page_allocator.cpp
+)
+set_target_properties(ares_allocators PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(ares_allocators PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+###########################################
+# Tests
+###########################################
+
 if (TESTS)
     add_subdirectory(tests)
     enable_testing()
