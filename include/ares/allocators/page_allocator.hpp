@@ -15,6 +15,7 @@
 
 extern const size_t PAGE_SIZE;
 
+namespace ares {
 namespace detail {
 void *allocate_aligned_page(size_t size);
 void deallocate_aligned_page(void *ptr) noexcept;
@@ -145,5 +146,6 @@ class PageAllocator<const T> {
 
     static void destroy(pointer p) { p->~T(); }
 };
+} // namespace ares
 
 #endif // ARES_PAGE_ALLOCATOR_HPP

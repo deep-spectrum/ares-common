@@ -141,6 +141,16 @@ set_target_properties(ares_allocators PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(ares_allocators PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 ###########################################
+# Mount point
+###########################################
+
+add_library(ares_mount_point STATIC
+        src/mntpoint/mntpoint.cpp
+)
+set_target_properties(ares_mount_point PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(ares_mount_point PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+###########################################
 # Tests
 ###########################################
 

@@ -14,6 +14,7 @@
 
 const size_t PAGE_SIZE = sysconf(_SC_PAGESIZE);
 
+namespace ares {
 void *detail::allocate_aligned_page(size_t size) {
     if (size == 0) {
         return nullptr;
@@ -30,3 +31,4 @@ void *detail::allocate_aligned_page(size_t size) {
 }
 
 void detail::deallocate_aligned_page(void *ptr) noexcept { free(ptr); }
+} // namespace ares

@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <unistd.h>
 
+namespace ares {
 // Source - https://stackoverflow.com/a/12942652
 // Posted by znkr, modified by community. See post 'Timeline' for change history
 // Retrieved 2026-05-27, License - CC BY-SA 3.0
@@ -37,3 +38,4 @@ void *detail::allocate_aligned_memory(size_t align, size_t size) {
 }
 
 void detail::deallocate_aligned_memory(void *ptr) noexcept { free(ptr); }
+} // namespace ares
