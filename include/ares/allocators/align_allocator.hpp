@@ -13,6 +13,7 @@
 
 #include <memory>
 
+namespace ares {
 namespace detail {
 void *allocate_aligned_memory(size_t align, size_t size);
 void deallocate_aligned_memory(void *ptr) noexcept;
@@ -157,5 +158,6 @@ bool operator!=(const AlignedAllocator<T, TAlign> &,
                 const AlignedAllocator<U, UAlign> &) noexcept {
     return TAlign != UAlign;
 }
+} // namespace ares
 
 #endif // ARES_ALIGN_ALLOCATOR_HPP
