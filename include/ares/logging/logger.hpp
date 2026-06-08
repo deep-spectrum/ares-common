@@ -15,10 +15,6 @@
 #include <vector>
 
 namespace ares {
-#if defined(USE_PYTHON_LOGGERS)
-#include <memory>
-class PieceOfShitIdiom;
-#endif // defined(USE_PYTHON_LOGGERS)
 
 /**
  * @class Logger
