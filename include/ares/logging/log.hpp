@@ -249,25 +249,25 @@
 /**
  * Register redirect callbacks for the logger.
  *
- * @param debug Debug callback.
- * @param info Info callback.
- * @param warning Warning callback.
- * @param error Error callback.
- * @param critical Critical error callback.
- * @param set_level Set level callback.
- * @param get_level Get level callback.
+ * @param debug_ Debug callback.
+ * @param info_ Info callback.
+ * @param warning_ Warning callback.
+ * @param error_ Error callback.
+ * @param critical_ Critical error callback.
+ * @param set_level_ Set level callback.
+ * @param get_level_ Get level callback.
  */
-#define REGISTER_LOGGER_CALLBACKS(debug, info, warning, error, critical,       \
-                                  set_level, get_level)                        \
+#define LOG_MODULE_REGISTER_CALLBACKS(debug_, info_, warning_, error_,         \
+                                      critical_, set_level_, get_level_)       \
     do {                                                                       \
         ares::LoggerCallbacks cb = {                                           \
-            .dbg = debug,                                                      \
-            .info = info,                                                      \
-            .warn = warning,                                                   \
-            .error = error,                                                    \
-            .critical = critical,                                              \
-            .set_level = set_level,                                            \
-            .get_level = get_level,                                            \
+            .dbg = debug_,                                                     \
+            .info = info_,                                                     \
+            .warn = warning_,                                                  \
+            .error = error_,                                                   \
+            .critical = critical_,                                             \
+            .set_level = set_level_,                                           \
+            .get_level = get_level_,                                           \
         };                                                                     \
         __logger__.register_logging_callbacks(cb);                             \
     } while (false)
