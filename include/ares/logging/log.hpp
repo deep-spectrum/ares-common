@@ -246,4 +246,30 @@
         __logger__.set_log_level(ares::Logger::LogLevel::new_level);           \
     } while (false)
 
+/**
+ * Register redirect callbacks for the logger.
+ *
+ * @param debug Debug callback.
+ * @param info Info callback.
+ * @param warning Warning callback.
+ * @param error Error callback.
+ * @param critical Critical error callback.
+ * @param set_level Set level callback.
+ * @param get_level Get level callback.
+ */
+#define REGISTER_LOGGER_CALLBACKS(debug, info, warning, error, critical,       \
+                                  set_level, get_level)                        \
+    do {                                                                       \
+        ares::LoggerCallbacks cb = {                                           \
+            .dbg = debug,                                                      \
+            .info = info,                                                      \
+            .warn = warning,                                                   \
+            .error = error,                                                    \
+            .critical = critical,                                              \
+            .set_level = set_level,                                            \
+            .get_level = get_level,                                            \
+        };                                                                     \
+        __logger__.register_logging_callbacks(cb);                             \
+    } while (false)
+
 #endif // ARES_COMMON_LOG_HPP
