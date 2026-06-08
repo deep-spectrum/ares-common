@@ -12,9 +12,63 @@
 #define ARES_COMMON_LOGGER_HPP
 
 #include <cstdint>
+#include <functional>
+#include <string>
 #include <vector>
 
 namespace ares {
+/**
+ * @struct LoggerCallbacks
+ * Custom callback handles for logging.
+ */
+struct LoggerCallbacks {
+    /**
+     * Debug message callback.
+     * @param[in] msg Logging message.
+     */
+    std::function<void(const std::string &msg)> dbg = nullptr;
+
+    /**
+     * Info message callback.
+     * @param[in] msg Logging message.
+     */
+    std::function<void(const std::string &msg)> info = nullptr;
+
+    /**
+     * Warning message callback.
+     * @param[in] msg Logging message.
+     */
+    std::function<void(const std::string &msg)> warn = nullptr;
+
+    /**
+     * Error message callback.
+     * @param[in] msg Logging message.
+     */
+    std::function<void(const std::string &msg)> error = nullptr;
+
+    /**
+     * Critical error message callback.
+     * @param[in] msg Logging message.
+     */
+    std::function<void(const std::string &msg)> critical = nullptr;
+
+    /**
+     * Callback for setting the log message level.
+     * @param[in] level The new logging level.
+     *
+     * @note This should rarely be used. This was primarily built for instances
+     * where logging needs to be redirected to a Python logger.
+     */
+    std::function<void(long level)> set_level = nullptr;
+
+    /**
+     * Callback for getting the log message level.
+     *
+     * @note This should rarely be used. This was primarily built for instances
+     * where logging needs to be redirected to a Python logger.
+     */
+    std::function<long()> get_level = nullptr;
+};
 
 /**
  * @class Logger
@@ -29,12 +83,12 @@ class Logger {
      * Logging levels.
      */
     enum LogLevel : unsigned int {
-        LOG_LEVEL_DBG = 0,      ///< Debug logging level.
-        LOG_LEVEL_INFO = 1,     ///< Info logging level.
-        LOG_LEVEL_WARN = 2,     ///< Warning logging level.
-        LOG_LEVEL_ERROR = 3,    ///< Error logging level.
-        LOG_LEVEL_CRITICAL = 4, ///< Critical logging level.
-        LOG_LEVEL_OFF = 5,      ///< Logging turned off.
+        LOG_LEVEL_DBG = 10,      ///< Debug logging level.
+        LOG_LEVEL_INFO = 20,     ///< Info logging level.
+        LOG_LEVEL_WARN = 30,     ///< Warning logging level.
+        LOG_LEVEL_ERROR = 40,    ///< Error logging level.
+        LOG_LEVEL_CRITICAL = 50, ///< Critical logging level.
+        LOG_LEVEL_OFF = 60,      ///< Logging turned off.
     };
 
     /**
@@ -89,19 +143,24 @@ class Logger {
     void log_hexdump(LogLevel level, const char *msg,
                      const std::vector<uint8_t> &buf, std::size_t bytes);
 
+    /**
+     * Register logging callbacks. This is primarily meant for redirecting the
+     * messages to a different logger implementation.
+     *
+     * @param[in] cb The logger callbacks to register.
+     */
+    void register_logging_callbacks(const LoggerCallbacks &cb);
+
   private:
-#if defined(USE_PYTHON_LOGGERS)
-    std::unique_ptr<PieceOfShitIdiom> _impl;
-#else
     const char *_name;
     LogLevel _level;
+    LoggerCallbacks _cb;
 
     void _log_dbg(const char *msg) const;
     void _log_inf(const char *msg) const;
     void _log_wrn(const char *msg) const;
     void _log_err(const char *msg) const;
     void _log_crit(const char *msg) const;
-#endif // defined(USE_PYTHON_LOGGERS)
 };
 } // namespace ares
 

@@ -161,6 +161,8 @@ void Logger::log_hexdump(LogLevel level, const char *msg,
     }
 }
 
+void Logger::register_logging_callbacks(const LoggerCallbacks &cb) { _cb = cb; }
+
 void Logger::_log_dbg(const char *msg) const {
     if (_level == LOG_LEVEL_DBG) {
         printf("%s[DBG]%s %s: %s\n", dbg_color, reset_color, _name, msg);
