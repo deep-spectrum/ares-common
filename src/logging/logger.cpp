@@ -10,11 +10,6 @@
 #include <sstream>
 
 namespace ares {
-#if defined(USE_PYTHON_LOGGERS)
-#include <memory>
-#include <pybind11/embed.h>
-namespace py = pybind11;
-#endif
 
 constexpr const char *reset_color = "\033[0m";
 constexpr const char *dbg_color = reset_color;
@@ -23,141 +18,25 @@ constexpr const char *wrn_color = "\033[38;2;163;115;76m";
 constexpr const char *err_color = "\033[38;2;193;29;40m";
 constexpr const char *crit_color = "\033[38;2;117;80;123m";
 
-#if defined(USE_PYTHON_LOGGERS)
-class __attribute__((visibility("hidden"))) PieceOfShitIdiom {
-  public:
-    py::object logger;
-
-    py::object DBG;
-    py::object INFO;
-    py::object WARNING;
-    py::object ERROR;
-    py::object CRITICAL;
-    py::object OFF;
-
-    explicit PieceOfShitIdiom(const char *name, Logger::LogLevel level) {
-        py::module_ mod_ = py::module_::import("logging");
-        logger = mod_.attr("getLogger")(name);
-        DBG = mod_.attr("DEBUG");
-        INFO = mod_.attr("INFO");
-        WARNING = mod_.attr("WARNING");
-        ERROR = mod_.attr("ERROR");
-        CRITICAL = mod_.attr("CRITICAL");
-        OFF = CRITICAL + py::int_(10);
-        set_level(level);
-    }
-
-    void log(Logger::LogLevel level, const char *msg) {
-        switch (level) {
-        case Logger::LogLevel::LOG_LEVEL_DBG: {
-            logger.attr("debug")(msg);
-            break;
-        }
-        case Logger::LogLevel::LOG_LEVEL_INFO: {
-            logger.attr("info")(msg);
-            break;
-        }
-        case Logger::LogLevel::LOG_LEVEL_WARN: {
-            logger.attr("warning")(msg);
-            break;
-        }
-        case Logger::LogLevel::LOG_LEVEL_ERROR: {
-            logger.attr("error")(msg);
-            break;
-        }
-        case Logger::LogLevel::LOG_LEVEL_CRITICAL: {
-            logger.attr("critical")(msg);
-            break;
-        }
-        default: {
-            break;
-        }
-        }
-    }
-
-    void set_level(Logger::LogLevel level) {
-        switch (level) {
-        case Logger::LogLevel::LOG_LEVEL_DBG: {
-            logger.attr("setLevel")(DBG);
-            break;
-        }
-        case Logger::LogLevel::LOG_LEVEL_INFO: {
-            logger.attr("setLevel")(INFO);
-            break;
-        }
-        case Logger::LogLevel::LOG_LEVEL_WARN: {
-            logger.attr("setLevel")(WARNING);
-            break;
-        }
-        case Logger::LogLevel::LOG_LEVEL_ERROR: {
-            logger.attr("setLevel")(ERROR);
-            break;
-        }
-        case Logger::LogLevel::LOG_LEVEL_CRITICAL: {
-            logger.attr("setLevel")(CRITICAL);
-            break;
-        }
-        case Logger::LogLevel::LOG_LEVEL_OFF: {
-            logger.attr("setLevel")(OFF);
-            break;
-        }
-        default: {
-            break;
-        }
-        }
-    }
-
-    [[nodiscard]] Logger::LogLevel get_level() const {
-        int level = logger.attr("level").cast<int>();
-        Logger::LogLevel ret;
-
-        // Unfortunately, return values from functions cannot be used in switch
-        // statements. To make sure we aren't using magic numbers and staying
-        // compatible with future releases we have to do an ugly if-else
-        // chain...
-        if (level < INFO.cast<int>()) {
-            ret = Logger::LogLevel::LOG_LEVEL_DBG;
-        } else if (level < WARNING.cast<int>()) {
-            ret = Logger::LogLevel::LOG_LEVEL_INFO;
-        } else if (level < ERROR.cast<int>()) {
-            ret = Logger::LogLevel::LOG_LEVEL_WARN;
-        } else if (level < CRITICAL.cast<int>()) {
-            ret = Logger::LogLevel::LOG_LEVEL_ERROR;
-        } else if (level < OFF.cast<int>()) {
-            ret = Logger::LogLevel::LOG_LEVEL_CRITICAL;
-        } else {
-            ret = Logger::LogLevel::LOG_LEVEL_OFF;
-        }
-
-        return ret;
-    }
-};
-#endif
-
 Logger::Logger(const char *name, LogLevel level) {
-#if defined(USE_PYTHON_LOGGERS)
-    _impl =
-        std::unique_ptr<PieceOfShitIdiom>(new PieceOfShitIdiom(name, level));
-#else
     _name = name;
     _level = level;
-#endif
 }
 
 void Logger::set_log_level(LogLevel level) {
-#if defined(USE_PYTHON_LOGGERS)
-    _impl->set_level(level);
-#else
     _level = level;
-#endif
+
+    if (_cb.set_level) {
+        _cb.set_level(static_cast<long>(level));
+    }
 }
 
 Logger::LogLevel Logger::get_log_level() const {
-#if defined(USE_PYTHON_LOGGERS)
-    return _impl->get_level();
-#else
+    if (_cb.get_level) {
+        return static_cast<LogLevel>(_cb.get_level());
+    }
+
     return _level;
-#endif
 }
 
 void Logger::log(LogLevel level, const char *fmt, ...) const {
@@ -175,9 +54,6 @@ void Logger::log(LogLevel level, const char *fmt, ...) const {
     char *msg = new char[len + 1];
     vsnprintf(msg, len + 1, fmt, args);
     va_end(args);
-#if defined(USE_PYTHON_LOGGERS)
-    _impl->log(level, msg);
-#else
     switch (level) {
     case LOG_LEVEL_DBG: {
         _log_dbg(msg);
@@ -202,7 +78,6 @@ void Logger::log(LogLevel level, const char *fmt, ...) const {
     default:
         break;
     }
-#endif
 
     delete[] msg;
 }
@@ -260,7 +135,8 @@ static void construct_hexdump(const std::string_view data, size_t pad,
 }
 
 void Logger::log_hexdump(LogLevel level, const char *msg,
-                         const std::vector<uint8_t> &buf, std::size_t bytes) {
+                         const std::vector<uint8_t> &buf,
+                         std::size_t bytes) const {
     std::stringstream ss;
     ss << msg << "\n";
     size_t offset =
@@ -272,9 +148,6 @@ void Logger::log_hexdump(LogLevel level, const char *msg,
                          std::min(bytes, buf.size())},
         offset, ss);
 
-#if defined(USE_PYTHON_LOGGERS)
-    _impl->log(level, ss.str().c_str())
-#else
     switch (level) {
     case LOG_LEVEL_DBG: {
         _log_dbg(ss.str().c_str());
@@ -299,38 +172,68 @@ void Logger::log_hexdump(LogLevel level, const char *msg,
     default:
         break;
     }
-#endif
 }
 
-#if !defined(USE_PYTHON_LOGGERS)
+void Logger::register_logging_callbacks(const LoggerCallbacks &cb) {
+    _cb = cb;
+
+    if (_cb.set_level) {
+        set_log_level(_level);
+    }
+}
+
 void Logger::_log_dbg(const char *msg) const {
+    if (_cb.dbg) {
+        _cb.dbg(msg);
+        return;
+    }
+
     if (_level == LOG_LEVEL_DBG) {
         printf("%s[DBG]%s %s: %s\n", dbg_color, reset_color, _name, msg);
     }
 }
 
 void Logger::_log_inf(const char *msg) const {
+    if (_cb.info) {
+        _cb.info(msg);
+        return;
+    }
+
     if (_level <= LOG_LEVEL_INFO) {
         printf("%s[INFO]%s %s: %s\n", inf_color, reset_color, _name, msg);
     }
 }
 
 void Logger::_log_wrn(const char *msg) const {
+    if (_cb.warn) {
+        _cb.warn(msg);
+        return;
+    }
+
     if (_level <= LOG_LEVEL_WARN) {
         printf("%s[WARN]%s %s: %s\n", wrn_color, reset_color, _name, msg);
     }
 }
 
 void Logger::_log_err(const char *msg) const {
+    if (_cb.error) {
+        _cb.error(msg);
+        return;
+    }
+
     if (_level <= LOG_LEVEL_ERROR) {
         printf("%s[ERR]%s %s: %s\n", err_color, reset_color, _name, msg);
     }
 }
 
 void Logger::_log_crit(const char *msg) const {
+    if (_cb.critical) {
+        _cb.critical(msg);
+        return;
+    }
+
     if (_level <= LOG_LEVEL_CRITICAL) {
         printf("%s[CRIT]%s %s: %s\n", crit_color, reset_color, _name, msg);
     }
 }
-#endif
 } // namespace ares

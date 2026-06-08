@@ -18,8 +18,6 @@ option(RT_TESTS "Add realtime tests" OFF)
 # Logging
 ###########################################
 
-option(USE_PYTHON_LOGGERS "Use Python logging library implementation" OFF)
-
 set(DEFAULT_LOG_LEVEL "off" CACHE STRING "Logging level: off, crit, err, wrn, inf, dbg")
 set_property(CACHE DEFAULT_LOG_LEVEL PROPERTY STRINGS off err wrn inf dbg)
 
@@ -44,18 +42,6 @@ add_library(logging STATIC src/logging/logger.cpp)
 set_target_properties(logging PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(logging PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_definitions(logging PUBLIC LOG_LEVEL=${LOG_LEVEL_VAL})
-
-if (USE_PYTHON_LOGGERS)
-    find_package(pybind11 QUIET)
-
-    if (TARGET pybind11::embed)
-        message(STATUS "Found pybind11::embed")
-        target_link_libraries(logging PRIVATE pybind11::embed)
-        target_compile_definitions(logging PRIVATE USE_PYTHON_LOGGERS)
-    else()
-        message(WARNING "USE_PYTHON_LIB is ON but pybind11::embed is not available")
-    endif()
-endif ()
 
 ###########################################
 # Serial
