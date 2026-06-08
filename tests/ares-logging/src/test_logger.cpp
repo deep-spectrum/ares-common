@@ -1496,3 +1496,71 @@ TEST(logger_api, log_hexdump_hex_output) {
         CHECK_HEX_OUTPUT(cut, expected, LOG_LEVEL_DBG, "foo", single, 1);
     }
 }
+
+class PythonMockLogger {
+  public:
+    long level_ = 0;
+    std::string msg_dbg;
+    std::string msg_info;
+    std::string msg_warn;
+    std::string msg_error;
+    std::string msg_crit;
+
+    void debug(const std::string &msg) { msg_dbg = msg; }
+    void info(const std::string &msg) { msg_info = msg; }
+    void warn(const std::string &msg) { msg_warn = msg; }
+    void error(const std::string &msg) { msg_error = msg; }
+    void crit(const std::string &msg) { msg_crit = msg; }
+
+    void set_level(long level) { level_ = level; }
+    [[nodiscard]] long level() { return level_; }
+};
+
+TEST(logger_api, log_cb_init) {
+    PythonMockLogger mock;
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_DBG);
+    ares::LoggerCallbacks cb{
+        .set_level = [&mock](long level) { mock.set_level(level); },
+        .get_level = [&mock]() { return mock.level(); },
+    };
+    cut.register_logging_callbacks(cb);
+
+    ASSERT_EQ(mock.level_, static_cast<long>(ares::Logger::LOG_LEVEL_DBG));
+    cut.set_log_level(ares::Logger::LOG_LEVEL_OFF);
+    ASSERT_EQ(mock.level_, static_cast<long>(ares::Logger::LOG_LEVEL_OFF));
+
+    mock.level_ = static_cast<long>(ares::Logger::LOG_LEVEL_WARN);
+    ASSERT_EQ(cut.get_log_level(), ares::Logger::LOG_LEVEL_WARN);
+}
+
+TEST(logger_api, log_cb_msg) {
+    PythonMockLogger mock;
+    ares::Logger cut("cut", ares::Logger::LOG_LEVEL_DBG);
+    ares::LoggerCallbacks cb{
+        .dbg = [&mock](const std::string &msg) { mock.debug(msg); },
+        .info = [&mock](const std::string &msg) { mock.info(msg); },
+        .warn = [&mock](const std::string &msg) { mock.warn(msg); },
+        .error = [&mock](const std::string &msg) { mock.error(msg); },
+        .critical = [&mock](const std::string &msg) { mock.crit(msg); },
+    };
+    cut.register_logging_callbacks(cb);
+
+    const char *dbg_msg = "AAAA";
+    const char *info_msg = "BBBB";
+    const char *warn_msg = "CCCC";
+    const char *error_msg = "DDDD";
+    const char *crit_msg = "EEEE";
+
+    // Messages should get passed through no matter what
+    cut.log(ares::Logger::LOG_LEVEL_DBG, "%s", dbg_msg);
+    cut.log(ares::Logger::LOG_LEVEL_INFO, "%s", info_msg);
+    cut.log(ares::Logger::LOG_LEVEL_WARN, "%s", warn_msg);
+    cut.log(ares::Logger::LOG_LEVEL_ERROR, "%s", error_msg);
+    cut.log(ares::Logger::LOG_LEVEL_CRITICAL, "%s", crit_msg);
+
+    ASSERT_EQ(mock.msg_dbg, dbg_msg);
+    ASSERT_EQ(mock.msg_info, info_msg);
+    ASSERT_EQ(mock.msg_warn, warn_msg);
+    ASSERT_EQ(mock.msg_error, error_msg);
+    ASSERT_EQ(mock.msg_crit, crit_msg);
+}

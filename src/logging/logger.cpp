@@ -185,6 +185,7 @@ void Logger::register_logging_callbacks(const LoggerCallbacks &cb) {
 void Logger::_log_dbg(const char *msg) const {
     if (_cb.dbg) {
         _cb.dbg(msg);
+        return;
     }
 
     if (_level == LOG_LEVEL_DBG) {
@@ -195,6 +196,7 @@ void Logger::_log_dbg(const char *msg) const {
 void Logger::_log_inf(const char *msg) const {
     if (_cb.info) {
         _cb.info(msg);
+        return;
     }
 
     if (_level <= LOG_LEVEL_INFO) {
@@ -205,6 +207,7 @@ void Logger::_log_inf(const char *msg) const {
 void Logger::_log_wrn(const char *msg) const {
     if (_cb.warn) {
         _cb.warn(msg);
+        return;
     }
 
     if (_level <= LOG_LEVEL_WARN) {
@@ -215,6 +218,7 @@ void Logger::_log_wrn(const char *msg) const {
 void Logger::_log_err(const char *msg) const {
     if (_cb.error) {
         _cb.error(msg);
+        return;
     }
 
     if (_level <= LOG_LEVEL_ERROR) {
@@ -225,6 +229,7 @@ void Logger::_log_err(const char *msg) const {
 void Logger::_log_crit(const char *msg) const {
     if (_cb.critical) {
         _cb.critical(msg);
+        return;
     }
 
     if (_level <= LOG_LEVEL_CRITICAL) {
