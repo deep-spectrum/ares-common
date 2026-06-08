@@ -246,3 +246,43 @@ TEST(logger_api, log_hexdump_crit) {
                   "             00 01 02 03   04 05 06 07   |.... ....\n",
                   "foo", data, data.size());
 }
+
+const char *dbg_msg = "AAAA";
+const char *info_msg = "BBBB";
+const char *warn_msg = "CCCC";
+const char *error_msg = "DDDD";
+const char *crit_msg = "EEEE";
+long level = 0;
+
+void dbg(const std::string &msg) { EXPECT_EQ(msg, dbg_msg); }
+
+void info(const std::string &msg) { EXPECT_EQ(msg, info_msg); }
+
+void warning(const std::string &msg) { EXPECT_EQ(msg, warn_msg); }
+
+void error(const std::string &msg) { EXPECT_EQ(msg, error_msg); }
+
+void critical(const std::string &msg) { EXPECT_EQ(msg, crit_msg); }
+
+void set_level(long new_level) { level = new_level; }
+
+long get_level() { return level; }
+
+TEST(logger_api, log_register_callbacks) {
+    LOG_MODULE_REGISTER(test, LOG_LEVEL_DBG);
+    LOG_MODULE_REGISTER_CALLBACKS(dbg, info, warning, error, critical,
+                                  set_level, get_level);
+
+    LOG_DBG("%s", dbg_msg);
+    LOG_INF("%s", info_msg);
+    LOG_WRN("%s", warn_msg);
+    LOG_ERR("%s", error_msg);
+    LOG_CRIT("%s", crit_msg);
+
+    EXPECT_EQ(level, static_cast<long>(ares::Logger::LOG_LEVEL_DBG));
+
+    SAVE_LOG_LEVEL_AND_FORCE(LOG_LEVEL_CRITICAL);
+    EXPECT_EQ(level, static_cast<long>(ares::Logger::LOG_LEVEL_CRITICAL));
+    RESTORE_LOG_LEVEL();
+    EXPECT_EQ(level, static_cast<long>(ares::Logger::LOG_LEVEL_DBG));
+}
