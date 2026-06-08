@@ -23,9 +23,21 @@ Logger::Logger(const char *name, LogLevel level) {
     _level = level;
 }
 
-void Logger::set_log_level(LogLevel level) { _level = level; }
+void Logger::set_log_level(LogLevel level) {
+    _level = level;
 
-Logger::LogLevel Logger::get_log_level() const { return _level; }
+    if (_cb.set_level) {
+        _cb.set_level(static_cast<long>(level));
+    }
+}
+
+Logger::LogLevel Logger::get_log_level() const {
+    if (_cb.get_level) {
+        return static_cast<LogLevel>(_cb.get_level());
+    }
+
+    return _level;
+}
 
 void Logger::log(LogLevel level, const char *fmt, ...) const {
     va_list args, args_copy;
@@ -123,7 +135,8 @@ static void construct_hexdump(const std::string_view data, size_t pad,
 }
 
 void Logger::log_hexdump(LogLevel level, const char *msg,
-                         const std::vector<uint8_t> &buf, std::size_t bytes) {
+                         const std::vector<uint8_t> &buf,
+                         std::size_t bytes) const {
     std::stringstream ss;
     ss << msg << "\n";
     size_t offset =
@@ -161,33 +174,59 @@ void Logger::log_hexdump(LogLevel level, const char *msg,
     }
 }
 
-void Logger::register_logging_callbacks(const LoggerCallbacks &cb) { _cb = cb; }
+void Logger::register_logging_callbacks(const LoggerCallbacks &cb) {
+    _cb = cb;
+
+    if (_cb.set_level) {
+        set_log_level(_level);
+    }
+}
 
 void Logger::_log_dbg(const char *msg) const {
+    if (_cb.dbg) {
+        _cb.dbg(msg);
+    }
+
     if (_level == LOG_LEVEL_DBG) {
         printf("%s[DBG]%s %s: %s\n", dbg_color, reset_color, _name, msg);
     }
 }
 
 void Logger::_log_inf(const char *msg) const {
+    if (_cb.info) {
+        _cb.info(msg);
+    }
+
     if (_level <= LOG_LEVEL_INFO) {
         printf("%s[INFO]%s %s: %s\n", inf_color, reset_color, _name, msg);
     }
 }
 
 void Logger::_log_wrn(const char *msg) const {
+    if (_cb.warn) {
+        _cb.warn(msg);
+    }
+
     if (_level <= LOG_LEVEL_WARN) {
         printf("%s[WARN]%s %s: %s\n", wrn_color, reset_color, _name, msg);
     }
 }
 
 void Logger::_log_err(const char *msg) const {
+    if (_cb.error) {
+        _cb.error(msg);
+    }
+
     if (_level <= LOG_LEVEL_ERROR) {
         printf("%s[ERR]%s %s: %s\n", err_color, reset_color, _name, msg);
     }
 }
 
 void Logger::_log_crit(const char *msg) const {
+    if (_cb.critical) {
+        _cb.critical(msg);
+    }
+
     if (_level <= LOG_LEVEL_CRITICAL) {
         printf("%s[CRIT]%s %s: %s\n", crit_color, reset_color, _name, msg);
     }

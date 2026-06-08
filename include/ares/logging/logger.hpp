@@ -141,7 +141,7 @@ class Logger {
      * @param[in] bytes Length of the data to be logged (in bytes).
      */
     void log_hexdump(LogLevel level, const char *msg,
-                     const std::vector<uint8_t> &buf, std::size_t bytes);
+                     const std::vector<uint8_t> &buf, std::size_t bytes) const;
 
     /**
      * Register logging callbacks. This is primarily meant for redirecting the
