@@ -393,7 +393,7 @@ void bounded_queue<Type, max_size, overwrite>::put(
 template <typename Type, size_t max_size, bool overwrite>
 template <typename U>
 void bounded_queue<Type, max_size, overwrite>::put_nonblocking(U &&item) {
-    put(item, std::chrono::milliseconds::zero());
+    put(std::forward<U>(item), std::chrono::milliseconds::zero());
 }
 
 template <typename Type, size_t max_size, bool overwrite>
