@@ -149,3 +149,29 @@ def test_kwargs_junk():
     assert s.initial_i == KWARGS_DEFAULT_INITIAL_I
     assert s.s == KWARGS_DEFAULT_S
     assert s.c == KWARGS_DEFAULT_C
+
+def test_kwargs_none_value():
+    s = KwArgsTest(
+        d=None,
+        str=None,
+        l=None,
+        i=None,
+        s=None,
+        c=None,
+    )
+
+    assert s.foobar_s == KWARGS_DEFAULT_BAR_S
+    assert s.foobar_value == KWARGS_DEFAULT_BAR_VALUE
+    assert s.other == KWARGS_DEFAULT_BAR_OTHER
+    assert s.foo_s == KWARGS_DEFAULT_FOO_S
+    assert s.foo_l == KWARGS_DEFAULT_FOO_L
+    assert s.bar_s == KWARGS_DEFAULT_BAR_S
+    assert s.bar_value == KWARGS_DEFAULT_BAR_VALUE
+    assert s.bar_other == KWARGS_DEFAULT_BAR_OTHER
+    assert s.d == KWARGS_DEFAULT_D
+    assert s.str == KWARGS_DEFAULT_STR
+    assert s.l == KWARGS_DEFAULT_L
+    assert s.i == KWARGS_DEFAULT_I
+    assert s.initial_i == KWARGS_DEFAULT_INITIAL_I
+    assert s.s == KWARGS_DEFAULT_S
+    assert s.c == KWARGS_DEFAULT_C

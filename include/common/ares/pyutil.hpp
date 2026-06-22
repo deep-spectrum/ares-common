@@ -46,6 +46,8 @@ struct is_struct_param<StructParam<T>> : std::true_type {};
  * @param kwargs The key-word arguments from Python to be processed and
  * converted into struct parameters.
  * @param args The fields to be processed, wrapped in StructParam structs.
+ *
+ * @note If the input value is `None`, then the default value is used.
  */
 template <typename... Args>
 void from_kwargs(const py::kwargs &kwargs, Args &&...args) {
@@ -53,7 +55,7 @@ void from_kwargs(const py::kwargs &kwargs, Args &&...args) {
                   "All arguments to from must be wrapped in SP()");
 
     auto process = [&](auto &&item) {
-        if (kwargs.contains(item.name)) {
+        if (kwargs.contains(item.name) && !kwargs[item.name].is_none()) {
             using T = std::remove_pointer_t<std::decay_t<decltype(item.value)>>;
             *(item.value) = kwargs[item.name].template cast<T>();
         }
