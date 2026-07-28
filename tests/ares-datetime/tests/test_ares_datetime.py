@@ -1,5 +1,5 @@
 from datetime_test_core import py_datetime_to_ares_datetime
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def test_ares_datetime():
