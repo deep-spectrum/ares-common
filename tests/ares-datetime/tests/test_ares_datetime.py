@@ -1,4 +1,4 @@
-from datetime_test_core import py_datetime_to_ares_datetime
+from datetime_test_core import py_datetime_to_ares_datetime, py_datetime_to_ares_datetime_and_back
 from datetime import datetime, timezone
 
 
@@ -11,3 +11,8 @@ def test_ares_datetime():
     assert now.hour == ares_now[3]
     assert now.minute == ares_now[4]
     assert now.second == ares_now[5]
+
+def test_ares_datetime_time_point():
+    now = datetime.now()
+    ares_dt = py_datetime_to_ares_datetime_and_back(now)
+    assert now == ares_dt
