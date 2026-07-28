@@ -9,6 +9,8 @@ add_subdirectory(ares-work-q)
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ares-common/pyutils"
         DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/ares-common/")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ares-datetime"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
 enable_testing()
 
@@ -29,10 +31,20 @@ execute_process(
         COMMAND "${VENV_PYTHON}" -m pip install "${CMAKE_CURRENT_SOURCE_DIR}/ares-common/pyutils"
 )
 
+execute_process(
+        COMMAND "${VENV_PYTHON}" -m pip install "${CMAKE_CURRENT_SOURCE_DIR}/ares-datetime"
+)
+
 include(cmake/pytest.cmake)
 discover_pytest_tests(
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/ares-common/pyutils/tests"
         INTERPRETER ${VENV_PYTHON}
         PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/ares-common/pyutils"
         TEST_PREFIX "pyutils_"
+)
+discover_pytest_tests(
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/ares-datetime/tests"
+        INTERPRETER ${VENV_PYTHON}
+        PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/ares-datetime"
+        TEST_PREFIX "datetime_"
 )

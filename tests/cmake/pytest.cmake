@@ -34,12 +34,18 @@ function(discover_pytest_tests)
             COMMAND ${pytest_base_command} ${pytest_collect_args}
             WORKING_DIRECTORY ${_WORKING_DIRECTORY}
             OUTPUT_VARIABLE pytest_collect_output
+            ERROR_VARIABLE pytest_collect_error
             OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_STRIP_TRAILING_WHITESPACE
             RESULT_VARIABLE pytest_collect_result
     )
 
     if (NOT ${pytest_collect_result} EQUAL 0)
-        message(FATAL_ERROR "Error running Pytest discovery")
+        message(FATAL_ERROR "Pytest discovery failed!\n"
+                "Expected working directory: ${_WORKING_DIRECTORY}\n"
+                "Exit Code: ${pytest_collect_result}\n"
+                "STDOUT:\n${pytest_collect_output}\n"
+                "STDERR:\n${pytest_collect_error}")
     endif ()
 
     string(REPLACE [[;]] [[\;]] pytest_collect_output "${pytest_collect_output}")
