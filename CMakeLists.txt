@@ -137,6 +137,21 @@ set_target_properties(ares_mount_point PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(ares_mount_point PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 ###########################################
+# Datetime
+###########################################
+
+add_library(ares_datetime STATIC
+        src/datetime/datetime.cpp
+)
+set_target_properties(ares_datetime PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+)
+target_include_directories(ares_datetime PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+###########################################
 # Tests
 ###########################################
 
