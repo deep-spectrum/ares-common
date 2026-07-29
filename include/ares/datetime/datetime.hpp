@@ -113,6 +113,13 @@ class DateTime {
      */
     [[nodiscard]] std::chrono::system_clock::time_point time_point() const;
 
+    /**
+     * I don't know why this shit isn't implicitly generated for me...
+     * @param rhs Right hand side.
+     * @return This object.
+     */
+    DateTime& operator=(const DateTime &rhs) = default;
+
   private:
     std::chrono::system_clock::time_point _timepoint;
     int _year = 0;
