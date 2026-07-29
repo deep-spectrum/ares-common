@@ -52,6 +52,12 @@ class DateTime {
     DateTime() = default;
 
     /**
+     * Copy constructor.
+     * @param rhs Right hand side.
+     */
+    DateTime(const DateTime &rhs);
+
+    /**
      * Constructor.
      * @param[in] timepoint The timepoint to extract the date and time from.
      */
@@ -123,7 +129,7 @@ class DateTime {
      * @param rhs Right hand side.
      * @return This object.
      */
-    DateTime &operator=(const DateTime &rhs) = default;
+    DateTime &operator=(const DateTime &rhs);
 
   private:
     std::chrono::system_clock::time_point _timepoint{};
