@@ -30,6 +30,17 @@ static std::tm *localtime_safe(const std::time_t *time, std::tm *buf) {
 #endif
 }
 
+DateTime::DateTime(const DateTime &rhs) {
+    _year = rhs._year;
+    _month = rhs._month;
+    _day = rhs._day;
+    _hour = rhs._hour;
+    _minute = rhs._minute;
+    _second = rhs._second;
+    _microsecond = rhs._microsecond;
+    _datetime_to_timepoint();
+}
+
 DateTime::DateTime(const std::chrono::system_clock::time_point &timepoint) {
     _timepoint = timepoint;
     _timepoint_to_datetime(timepoint);
@@ -62,6 +73,18 @@ int DateTime::microsecond() const { return _microsecond; }
 
 std::chrono::system_clock::time_point DateTime::time_point() const {
     return _timepoint;
+}
+
+DateTime &DateTime::operator=(const DateTime &rhs) {
+    _year = rhs._year;
+    _month = rhs._month;
+    _day = rhs._day;
+    _hour = rhs._hour;
+    _minute = rhs._minute;
+    _second = rhs._second;
+    _microsecond = rhs._microsecond;
+    _datetime_to_timepoint();
+    return *this;
 }
 
 void DateTime::_timepoint_to_datetime(
