@@ -75,7 +75,7 @@ T2 get_bitfield(T1 bitfield, size_t lsb, size_t num_bits, T2 &value) {
 }
 
 template <size_t start_bit = 0, typename T, typename... Args>
-void set_flags(T &bitfield, Args &&...flags) {
+void set_flags(T &bitfield, Args... flags) {
     constexpr size_t T_size = sizeof(T) * __CHAR_BIT__;
     static_assert(start_bit < T_size);
     static_assert(sizeof...(Args) <= T_size);
@@ -96,7 +96,7 @@ void get_flags(const T bitfield, Args &&...flags) {
     constexpr size_t T_size = sizeof(T) * __CHAR_BIT__;
     static_assert(start_bit < T_size);
     static_assert(sizeof...(Args) <= T_size);
-    static_assert(std::conjunction_v<std::is_same<Args, bool>...>);
+    static_assert(std::conjunction_v<std::is_same<Args, bool &>...>);
 
     size_t bit = start_bit;
 
