@@ -55,6 +55,7 @@ DateTime::DateTime(int year, int month, int day, int hour, int minute,
     _minute = minute;
     _second = second;
     _microsecond = microsecond;
+    _datetime_to_timepoint();
 }
 
 int DateTime::year() const { return _year; }
