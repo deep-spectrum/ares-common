@@ -17,8 +17,9 @@
 namespace ares {
 /**
  * @class SharedFlag
- * Thread-safe condition flag that allows unlimited threads to read the flag,
- * but only allows one thread access to update the flag.
+ * A thread-safe condition flag. Provides shared access for multiple concurrent
+ * readers, but enforces exclusive access for a single writer thread during
+ * updates.
  */
 class SharedFlag {
   public:
