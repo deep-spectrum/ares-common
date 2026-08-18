@@ -18,10 +18,15 @@ constexpr const char *wrn_color = "\033[38;2;163;115;76m";
 constexpr const char *err_color = "\033[38;2;193;29;40m";
 constexpr const char *crit_color = "\033[38;2;117;80;123m";
 
-Logger::Logger(const char *name, LogLevel level) {
+static std::shared_ptr<sys_slist_t> list_ = std::make_shared<sys_slist_t>();
+
+Logger::Logger(const char *name, LogLevel level) : list(list_) {
     _name = name;
     _level = level;
+    sys_slist_append(&(*list), &node);
 }
+
+Logger::~Logger() { sys_slist_find_and_remove(&(*list), &node); }
 
 void Logger::set_log_level(LogLevel level) {
     _level = level;
@@ -235,5 +240,16 @@ void Logger::_log_crit(const char *msg) const {
     if (_level <= LOG_LEVEL_CRITICAL) {
         printf("%s[CRIT]%s %s: %s\n", crit_color, reset_color, _name, msg);
     }
+}
+
+Logger &get_logger_by_name(const char *name) {
+    Logger *logger, *tmp;
+    SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&(*list_), logger, tmp, node) {
+        if (strcmp(logger->_name, name) == 0) {
+            return *logger;
+        }
+    }
+
+    throw std::runtime_error("Did not find logger");
 }
 } // namespace ares

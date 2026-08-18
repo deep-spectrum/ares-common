@@ -11,8 +11,10 @@
 #ifndef ARES_COMMON_LOGGER_HPP
 #define ARES_COMMON_LOGGER_HPP
 
+#include <ares/data-structures/sys/slist.h>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -101,7 +103,7 @@ class Logger {
     /**
      * Destructor.
      */
-    ~Logger() = default;
+    ~Logger();
 
     /**
      * Sets the current logging level.
@@ -151,6 +153,8 @@ class Logger {
      */
     void register_logging_callbacks(const LoggerCallbacks &cb);
 
+    friend Logger &get_logger_by_name(const char *name);
+
   private:
     const char *_name;
     LogLevel _level;
@@ -161,7 +165,12 @@ class Logger {
     void _log_wrn(const char *msg) const;
     void _log_err(const char *msg) const;
     void _log_crit(const char *msg) const;
+
+    sys_snode_t node{};
+    std::shared_ptr<sys_slist_t> list;
 };
+
+Logger &get_logger_by_name(const char *name);
 } // namespace ares
 
 #endif // ARES_COMMON_LOGGER_HPP
