@@ -81,7 +81,7 @@ void LoggerImpl::log(Logger::LogLevel level, const char *fmt, va_list args) {
     int len = vsnprintf(nullptr, 0, fmt, copy);
     va_end(copy);
 
-    if (len <= 0) {
+    if (len < 0) {
         return;
     }
 

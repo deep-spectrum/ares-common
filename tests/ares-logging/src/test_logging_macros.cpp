@@ -89,7 +89,7 @@ TEST(logger_api, save_and_restore) {
         testing::internal::CaptureStdout();                                    \
         LOG_FUNC(input, __VA_ARGS__);                                          \
         std::string output = testing::internal::GetCapturedStdout();           \
-        ASSERT_EQ(output, expected);                                           \
+        EXPECT_EQ(output, expected);                                           \
     } while (false)
 
 TEST(logger_api, log_dbg) {
@@ -190,7 +190,7 @@ TEST(logger_api, log_crit) {
         testing::internal::CaptureStdout();                                    \
         LOG_FUNC(data, len, msg);                                              \
         std::string output = testing::internal::GetCapturedStdout();           \
-        ASSERT_EQ(output, expected);                                           \
+        EXPECT_EQ(output, expected);                                           \
     } while (false)
 
 TEST(logger_api, log_hexdump_dbg) {
