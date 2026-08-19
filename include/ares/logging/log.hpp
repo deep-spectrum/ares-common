@@ -40,13 +40,11 @@
 
 #define Z_REGISTER_LOGGER_DEFAULT(name_)                                       \
     static const char *__name__ = #name_;                                      \
-    __attribute__((init_priority(102))) static ares::Logger __logger__(        \
-        __name__, DEFAULT_LOG_LEVEL);                                          \
+    static ares::Logger __logger__(__name__, DEFAULT_LOG_LEVEL);               \
     static ares::Logger::LogLevel __saved_level__ = DEFAULT_LOG_LEVEL;
 #define Z_REGISTER_LOGGER(name_, level_)                                       \
     static const char *__name__ = #name_;                                      \
-    __attribute__((init_priority(102))) static ares::Logger __logger__(        \
-        __name__, ares::Logger::LogLevel::level_);                             \
+    static ares::Logger __logger__(__name__, ares::Logger::LogLevel::level_);  \
     static ares::Logger::LogLevel __saved_level__ =                            \
         ares::Logger::LogLevel::level_;
 /**

@@ -2,12 +2,12 @@
 // Created by tschmitz on 11/14/25.
 //
 
-#include <ares/data-structures/sys/slist.h>
 #include <ares/logging/logger.hpp>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <iomanip>
+#include <map>
 #include <sstream>
 
 namespace ares {
@@ -19,8 +19,7 @@ constexpr const char *wrn_color = "\033[38;2;163;115;76m";
 constexpr const char *err_color = "\033[38;2;193;29;40m";
 constexpr const char *crit_color = "\033[38;2;117;80;123m";
 
-__attribute__((init_priority(101))) static std::shared_ptr<sys_slist_t> list_ =
-    std::make_shared<sys_slist_t>();
+static std::map<std::string, std::shared_ptr<LoggerImpl>> loggers;
 
 class LoggerImpl : std::enable_shared_from_this<LoggerImpl> {
   public:
@@ -47,23 +46,14 @@ class LoggerImpl : std::enable_shared_from_this<LoggerImpl> {
     void _log_wrn(const char *msg) const;
     void _log_err(const char *msg) const;
     void _log_crit(const char *msg) const;
-
-    std::shared_ptr<LoggerImpl> get_shared_ptr();
-
-    sys_snode_t node{};
-    std::shared_ptr<sys_slist_t> list;
 };
 
-LoggerImpl::LoggerImpl(const char *name, Logger::LogLevel level) : list(list_) {
+LoggerImpl::LoggerImpl(const char *name, Logger::LogLevel level) {
     _name = name;
     _level = level;
-    sys_slist_append(&(*list), &node);
 }
 
-LoggerImpl::~LoggerImpl() {
-    printf("Logger implementation destructor called");
-    sys_slist_find_and_remove(&(*list), &node);
-}
+LoggerImpl::~LoggerImpl() { printf("Logger implementation destructor called"); }
 
 void LoggerImpl::set_log_level(Logger::LogLevel level) {
     _level = level;
@@ -227,20 +217,13 @@ void LoggerImpl::register_logging_callbacks(const LoggerCallbacks &cb) {
 
 std::shared_ptr<LoggerImpl> LoggerImpl::find_logger(const char *name,
                                                     Logger::LogLevel level) {
-    std::shared_ptr list(list_);
-    LoggerImpl *logger, *tmp;
+    auto logger_it = loggers.find(name);
 
-    SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&(*list), logger, tmp, node) {
-        if (strcmp(logger->_name, name) == 0) {
-            return logger->get_shared_ptr();
-        }
+    if (logger_it == loggers.end()) {
+        loggers[name] = std::make_shared<LoggerImpl>(name, level);
     }
 
-    return std::make_shared<LoggerImpl>(name, level);
-}
-
-std::shared_ptr<LoggerImpl> LoggerImpl::get_shared_ptr() {
-    return shared_from_this();
+    return loggers[name];
 }
 
 void LoggerImpl::_log_dbg(const char *msg) const {
