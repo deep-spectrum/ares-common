@@ -19,7 +19,8 @@ constexpr const char *wrn_color = "\033[38;2;163;115;76m";
 constexpr const char *err_color = "\033[38;2;193;29;40m";
 constexpr const char *crit_color = "\033[38;2;117;80;123m";
 
-static std::shared_ptr<sys_slist_t> list_ = std::make_shared<sys_slist_t>();
+__attribute__((init_priority(101))) static std::shared_ptr<sys_slist_t> list_ =
+    std::make_shared<sys_slist_t>();
 
 class LoggerImpl : std::enable_shared_from_this<LoggerImpl> {
   public:
