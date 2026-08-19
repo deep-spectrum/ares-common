@@ -8,6 +8,7 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
+#define Z_FILE_SCOPE_LOGGERS_DISABLE
 #include <ares/logging/log.hpp>
 #include <gtest/gtest.h>
 
