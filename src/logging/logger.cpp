@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <cstring>
 #include <iomanip>
+#include <map>
+#include <mutex>
 #include <sstream>
 
 namespace ares {
@@ -18,34 +20,66 @@ constexpr const char *wrn_color = "\033[38;2;163;115;76m";
 constexpr const char *err_color = "\033[38;2;193;29;40m";
 constexpr const char *crit_color = "\033[38;2;117;80;123m";
 
-Logger::Logger(const char *name, LogLevel level) {
+__attribute__((init_priority(
+    101))) static std::map<std::string, std::shared_ptr<LoggerImpl>>
+    loggers;
+
+class LoggerImpl : std::enable_shared_from_this<LoggerImpl> {
+  public:
+    LoggerImpl(const char *name, Logger::LogLevel level);
+    ~LoggerImpl() = default;
+
+    void set_log_level(Logger::LogLevel level);
+    [[nodiscard]] Logger::LogLevel get_log_level();
+    void log(Logger::LogLevel level, const char *fmt, va_list args);
+    void log_hexdump(Logger::LogLevel level, const char *msg,
+                     const std::vector<uint8_t> &buf, std::size_t bytes);
+    void register_logging_callbacks(const LoggerCallbacks &cb);
+
+    static std::shared_ptr<LoggerImpl> find_logger(const char *name,
+                                                   Logger::LogLevel level);
+
+  private:
+    const char *_name;
+    Logger::LogLevel _level;
+    LoggerCallbacks _cb;
+    std::mutex _lock;
+
+    void _log_dbg(const char *msg);
+    void _log_inf(const char *msg);
+    void _log_wrn(const char *msg);
+    void _log_err(const char *msg);
+    void _log_crit(const char *msg);
+};
+
+LoggerImpl::LoggerImpl(const char *name, Logger::LogLevel level) {
     _name = name;
     _level = level;
 }
 
-void Logger::set_log_level(LogLevel level) {
+void LoggerImpl::set_log_level(Logger::LogLevel level) {
+    std::unique_lock lock(_lock);
     _level = level;
 
     if (_cb.set_level) {
-        _cb.set_level(static_cast<long>(level));
+        _cb.set_level(level);
     }
 }
 
-Logger::LogLevel Logger::get_log_level() const {
+Logger::LogLevel LoggerImpl::get_log_level() {
+    std::unique_lock lock(_lock);
     if (_cb.get_level) {
-        return static_cast<LogLevel>(_cb.get_level());
+        return static_cast<Logger::LogLevel>(_cb.get_level());
     }
 
     return _level;
 }
 
-void Logger::log(LogLevel level, const char *fmt, ...) const {
-    va_list args, args_copy;
-    va_start(args, fmt);
-    va_copy(args_copy, args);
-
-    int len = vsnprintf(nullptr, 0, fmt, args_copy);
-    va_end(args_copy);
+void LoggerImpl::log(Logger::LogLevel level, const char *fmt, va_list args) {
+    va_list copy;
+    va_copy(copy, args);
+    int len = vsnprintf(nullptr, 0, fmt, copy);
+    va_end(copy);
 
     if (len < 0) {
         return;
@@ -53,25 +87,25 @@ void Logger::log(LogLevel level, const char *fmt, ...) const {
 
     char *msg = new char[len + 1];
     vsnprintf(msg, len + 1, fmt, args);
-    va_end(args);
+
     switch (level) {
-    case LOG_LEVEL_DBG: {
+    case Logger::LOG_LEVEL_DBG: {
         _log_dbg(msg);
         break;
     }
-    case LOG_LEVEL_INFO: {
+    case Logger::LOG_LEVEL_INFO: {
         _log_inf(msg);
         break;
     }
-    case LOG_LEVEL_WARN: {
+    case Logger::LOG_LEVEL_WARN: {
         _log_wrn(msg);
         break;
     }
-    case LOG_LEVEL_ERROR: {
+    case Logger::LOG_LEVEL_ERROR: {
         _log_err(msg);
         break;
     }
-    case LOG_LEVEL_CRITICAL: {
+    case Logger::LOG_LEVEL_CRITICAL: {
         _log_crit(msg);
         break;
     }
@@ -134,13 +168,15 @@ static void construct_hexdump(const std::string_view data, size_t pad,
     }
 }
 
-void Logger::log_hexdump(LogLevel level, const char *msg,
-                         const std::vector<uint8_t> &buf,
-                         std::size_t bytes) const {
+void LoggerImpl::log_hexdump(Logger::LogLevel level, const char *msg,
+                             const std::vector<uint8_t> &buf,
+                             std::size_t bytes) {
     std::stringstream ss;
     ss << msg << "\n";
     size_t offset =
-        (level == LOG_LEVEL_DBG || level == LOG_LEVEL_ERROR) ? 6 : 7;
+        (level == Logger::LOG_LEVEL_DBG || level == Logger::LOG_LEVEL_ERROR)
+            ? 6
+            : 7;
     offset += strlen(_name) + 2;
 
     construct_hexdump(
@@ -149,23 +185,23 @@ void Logger::log_hexdump(LogLevel level, const char *msg,
         offset, ss);
 
     switch (level) {
-    case LOG_LEVEL_DBG: {
+    case Logger::LOG_LEVEL_DBG: {
         _log_dbg(ss.str().c_str());
         break;
     }
-    case LOG_LEVEL_INFO: {
+    case Logger::LOG_LEVEL_INFO: {
         _log_inf(ss.str().c_str());
         break;
     }
-    case LOG_LEVEL_WARN: {
+    case Logger::LOG_LEVEL_WARN: {
         _log_wrn(ss.str().c_str());
         break;
     }
-    case LOG_LEVEL_ERROR: {
+    case Logger::LOG_LEVEL_ERROR: {
         _log_err(ss.str().c_str());
         break;
     }
-    case LOG_LEVEL_CRITICAL: {
+    case Logger::LOG_LEVEL_CRITICAL: {
         _log_crit(ss.str().c_str());
         break;
     }
@@ -174,66 +210,108 @@ void Logger::log_hexdump(LogLevel level, const char *msg,
     }
 }
 
-void Logger::register_logging_callbacks(const LoggerCallbacks &cb) {
+void LoggerImpl::register_logging_callbacks(const LoggerCallbacks &cb) {
+    std::unique_lock lock(_lock);
     _cb = cb;
 
     if (_cb.set_level) {
-        set_log_level(_level);
+        _cb.set_level(_level);
     }
 }
 
-void Logger::_log_dbg(const char *msg) const {
+std::shared_ptr<LoggerImpl> LoggerImpl::find_logger(const char *name,
+                                                    Logger::LogLevel level) {
+    auto logger_it = loggers.find(name);
+
+    if (logger_it == loggers.end()) {
+        loggers[name] = std::make_shared<LoggerImpl>(name, level);
+    }
+
+    return loggers[name];
+}
+
+void LoggerImpl::_log_dbg(const char *msg) {
+    std::unique_lock lock(_lock);
     if (_cb.dbg) {
         _cb.dbg(msg);
         return;
     }
 
-    if (_level == LOG_LEVEL_DBG) {
+    if (_level == Logger::LOG_LEVEL_DBG) {
         printf("%s[DBG]%s %s: %s\n", dbg_color, reset_color, _name, msg);
     }
 }
 
-void Logger::_log_inf(const char *msg) const {
+void LoggerImpl::_log_inf(const char *msg) {
+    std::unique_lock lock(_lock);
     if (_cb.info) {
         _cb.info(msg);
         return;
     }
 
-    if (_level <= LOG_LEVEL_INFO) {
+    if (_level <= Logger::LOG_LEVEL_INFO) {
         printf("%s[INFO]%s %s: %s\n", inf_color, reset_color, _name, msg);
     }
 }
 
-void Logger::_log_wrn(const char *msg) const {
+void LoggerImpl::_log_wrn(const char *msg) {
+    std::unique_lock lock(_lock);
     if (_cb.warn) {
         _cb.warn(msg);
         return;
     }
 
-    if (_level <= LOG_LEVEL_WARN) {
+    if (_level <= Logger::LOG_LEVEL_WARN) {
         printf("%s[WARN]%s %s: %s\n", wrn_color, reset_color, _name, msg);
     }
 }
 
-void Logger::_log_err(const char *msg) const {
+void LoggerImpl::_log_err(const char *msg) {
+    std::unique_lock lock(_lock);
     if (_cb.error) {
         _cb.error(msg);
         return;
     }
 
-    if (_level <= LOG_LEVEL_ERROR) {
+    if (_level <= Logger::LOG_LEVEL_ERROR) {
         printf("%s[ERR]%s %s: %s\n", err_color, reset_color, _name, msg);
     }
 }
 
-void Logger::_log_crit(const char *msg) const {
+void LoggerImpl::_log_crit(const char *msg) {
+    std::unique_lock lock(_lock);
     if (_cb.critical) {
         _cb.critical(msg);
         return;
     }
 
-    if (_level <= LOG_LEVEL_CRITICAL) {
+    if (_level <= Logger::LOG_LEVEL_CRITICAL) {
         printf("%s[CRIT]%s %s: %s\n", crit_color, reset_color, _name, msg);
     }
+}
+
+Logger::Logger(const char *name, LogLevel level) {
+    impl = LoggerImpl::find_logger(name, level);
+}
+
+void Logger::set_log_level(LogLevel level) const { impl->set_log_level(level); }
+
+Logger::LogLevel Logger::get_log_level() const { return impl->get_log_level(); }
+
+void Logger::log(LogLevel level, const char *fmt, ...) const {
+    va_list args;
+    va_start(args, fmt);
+    impl->log(level, fmt, args);
+    va_end(args);
+}
+
+void Logger::log_hexdump(LogLevel level, const char *msg,
+                         const std::vector<uint8_t> &buf,
+                         std::size_t bytes) const {
+    impl->log_hexdump(level, msg, buf, bytes);
+}
+
+void Logger::register_logging_callbacks(const LoggerCallbacks &cb) const {
+    impl->register_logging_callbacks(cb);
 }
 } // namespace ares

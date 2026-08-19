@@ -17,6 +17,13 @@
 /**
  * @cond doxygen_suppress
  */
+
+#ifdef Z_FILE_SCOPE_LOGGERS_DISABLE
+#define Z_LOGGER_INIT_PRIO
+#else
+#define Z_LOGGER_INIT_PRIO __attribute__((init_priority(102)))
+#endif
+
 #define Z_LOG_LEVEL_DBG  0
 #define Z_LOG_LEVEL_INF  1
 #define Z_LOG_LEVEL_WRN  2
@@ -40,11 +47,13 @@
 
 #define Z_REGISTER_LOGGER_DEFAULT(name_)                                       \
     static const char *__name__ = #name_;                                      \
-    static ares::Logger __logger__(__name__, DEFAULT_LOG_LEVEL);               \
+    Z_LOGGER_INIT_PRIO static ares::Logger __logger__(__name__,                \
+                                                      DEFAULT_LOG_LEVEL);      \
     static ares::Logger::LogLevel __saved_level__ = DEFAULT_LOG_LEVEL;
 #define Z_REGISTER_LOGGER(name_, level_)                                       \
     static const char *__name__ = #name_;                                      \
-    static ares::Logger __logger__(__name__, ares::Logger::LogLevel::level_);  \
+    Z_LOGGER_INIT_PRIO static ares::Logger __logger__(                         \
+        __name__, ares::Logger::LogLevel::level_);                             \
     static ares::Logger::LogLevel __saved_level__ =                            \
         ares::Logger::LogLevel::level_;
 /**

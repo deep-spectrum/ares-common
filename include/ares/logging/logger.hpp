@@ -11,8 +11,8 @@
 #ifndef ARES_COMMON_LOGGER_HPP
 #define ARES_COMMON_LOGGER_HPP
 
-#include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -70,6 +70,8 @@ struct LoggerCallbacks {
     std::function<long()> get_level = nullptr;
 };
 
+class LoggerImpl;
+
 /**
  * @class Logger
  * Implementation of C++ logger.
@@ -107,7 +109,7 @@ class Logger {
      * Sets the current logging level.
      * @param[in] level The new logging level.
      */
-    void set_log_level(LogLevel level);
+    void set_log_level(LogLevel level) const;
 
     /**
      * Retrieve the current logging level.
@@ -149,18 +151,10 @@ class Logger {
      *
      * @param[in] cb The logger callbacks to register.
      */
-    void register_logging_callbacks(const LoggerCallbacks &cb);
+    void register_logging_callbacks(const LoggerCallbacks &cb) const;
 
   private:
-    const char *_name;
-    LogLevel _level;
-    LoggerCallbacks _cb;
-
-    void _log_dbg(const char *msg) const;
-    void _log_inf(const char *msg) const;
-    void _log_wrn(const char *msg) const;
-    void _log_err(const char *msg) const;
-    void _log_crit(const char *msg) const;
+    std::shared_ptr<LoggerImpl> impl;
 };
 } // namespace ares
 
