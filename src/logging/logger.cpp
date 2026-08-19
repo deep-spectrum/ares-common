@@ -8,6 +8,7 @@
 #include <cstring>
 #include <iomanip>
 #include <map>
+#include <mutex>
 #include <sstream>
 
 namespace ares {
@@ -26,13 +27,13 @@ __attribute__((init_priority(
 class LoggerImpl : std::enable_shared_from_this<LoggerImpl> {
   public:
     LoggerImpl(const char *name, Logger::LogLevel level);
-    ~LoggerImpl();
+    ~LoggerImpl() = default;
 
     void set_log_level(Logger::LogLevel level);
-    [[nodiscard]] Logger::LogLevel get_log_level() const;
-    void log(Logger::LogLevel level, const char *fmt, va_list args) const;
+    [[nodiscard]] Logger::LogLevel get_log_level();
+    void log(Logger::LogLevel level, const char *fmt, va_list args);
     void log_hexdump(Logger::LogLevel level, const char *msg,
-                     const std::vector<uint8_t> &buf, std::size_t bytes) const;
+                     const std::vector<uint8_t> &buf, std::size_t bytes);
     void register_logging_callbacks(const LoggerCallbacks &cb);
 
     static std::shared_ptr<LoggerImpl> find_logger(const char *name,
@@ -42,12 +43,13 @@ class LoggerImpl : std::enable_shared_from_this<LoggerImpl> {
     const char *_name;
     Logger::LogLevel _level;
     LoggerCallbacks _cb;
+    std::mutex _lock;
 
-    void _log_dbg(const char *msg) const;
-    void _log_inf(const char *msg) const;
-    void _log_wrn(const char *msg) const;
-    void _log_err(const char *msg) const;
-    void _log_crit(const char *msg) const;
+    void _log_dbg(const char *msg);
+    void _log_inf(const char *msg);
+    void _log_wrn(const char *msg);
+    void _log_err(const char *msg);
+    void _log_crit(const char *msg);
 };
 
 LoggerImpl::LoggerImpl(const char *name, Logger::LogLevel level) {
@@ -55,9 +57,8 @@ LoggerImpl::LoggerImpl(const char *name, Logger::LogLevel level) {
     _level = level;
 }
 
-LoggerImpl::~LoggerImpl() { printf("Logger implementation destructor called"); }
-
 void LoggerImpl::set_log_level(Logger::LogLevel level) {
+    std::unique_lock lock(_lock);
     _level = level;
 
     if (_cb.set_level) {
@@ -65,7 +66,8 @@ void LoggerImpl::set_log_level(Logger::LogLevel level) {
     }
 }
 
-Logger::LogLevel LoggerImpl::get_log_level() const {
+Logger::LogLevel LoggerImpl::get_log_level() {
+    std::unique_lock lock(_lock);
     if (_cb.get_level) {
         return static_cast<Logger::LogLevel>(_cb.get_level());
     }
@@ -73,8 +75,7 @@ Logger::LogLevel LoggerImpl::get_log_level() const {
     return _level;
 }
 
-void LoggerImpl::log(Logger::LogLevel level, const char *fmt,
-                     va_list args) const {
+void LoggerImpl::log(Logger::LogLevel level, const char *fmt, va_list args) {
     va_list copy;
     va_copy(copy, args);
     int len = vsnprintf(nullptr, 0, fmt, copy);
@@ -169,7 +170,7 @@ static void construct_hexdump(const std::string_view data, size_t pad,
 
 void LoggerImpl::log_hexdump(Logger::LogLevel level, const char *msg,
                              const std::vector<uint8_t> &buf,
-                             std::size_t bytes) const {
+                             std::size_t bytes) {
     std::stringstream ss;
     ss << msg << "\n";
     size_t offset =
@@ -210,6 +211,7 @@ void LoggerImpl::log_hexdump(Logger::LogLevel level, const char *msg,
 }
 
 void LoggerImpl::register_logging_callbacks(const LoggerCallbacks &cb) {
+    std::unique_lock lock(_lock);
     _cb = cb;
 
     if (_cb.set_level) {
@@ -228,7 +230,8 @@ std::shared_ptr<LoggerImpl> LoggerImpl::find_logger(const char *name,
     return loggers[name];
 }
 
-void LoggerImpl::_log_dbg(const char *msg) const {
+void LoggerImpl::_log_dbg(const char *msg) {
+    std::unique_lock lock(_lock);
     if (_cb.dbg) {
         _cb.dbg(msg);
         return;
@@ -239,7 +242,8 @@ void LoggerImpl::_log_dbg(const char *msg) const {
     }
 }
 
-void LoggerImpl::_log_inf(const char *msg) const {
+void LoggerImpl::_log_inf(const char *msg) {
+    std::unique_lock lock(_lock);
     if (_cb.info) {
         _cb.info(msg);
         return;
@@ -250,7 +254,8 @@ void LoggerImpl::_log_inf(const char *msg) const {
     }
 }
 
-void LoggerImpl::_log_wrn(const char *msg) const {
+void LoggerImpl::_log_wrn(const char *msg) {
+    std::unique_lock lock(_lock);
     if (_cb.warn) {
         _cb.warn(msg);
         return;
@@ -261,7 +266,8 @@ void LoggerImpl::_log_wrn(const char *msg) const {
     }
 }
 
-void LoggerImpl::_log_err(const char *msg) const {
+void LoggerImpl::_log_err(const char *msg) {
+    std::unique_lock lock(_lock);
     if (_cb.error) {
         _cb.error(msg);
         return;
@@ -272,7 +278,8 @@ void LoggerImpl::_log_err(const char *msg) const {
     }
 }
 
-void LoggerImpl::_log_crit(const char *msg) const {
+void LoggerImpl::_log_crit(const char *msg) {
+    std::unique_lock lock(_lock);
     if (_cb.critical) {
         _cb.critical(msg);
         return;
