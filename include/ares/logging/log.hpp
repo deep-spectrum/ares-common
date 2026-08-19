@@ -49,9 +49,6 @@
         __name__, ares::Logger::LogLevel::level_);                             \
     static ares::Logger::LogLevel __saved_level__ =                            \
         ares::Logger::LogLevel::level_;
-#define Z_GET_LOGGER(name_)                                                    \
-    __attribute__((init_priority(99))) static ares::Logger &__logger__ =       \
-        ares::get_logger_by_name(#name_);
 /**
  * @endcond
  */
@@ -65,12 +62,6 @@
 #define LOG_MODULE_REGISTER(name_, level_...)                                  \
     COND_CODE_0(IS_EMPTY(level_), (Z_REGISTER_LOGGER(name_, level_)),          \
                 (Z_REGISTER_LOGGER_DEFAULT(name_)))
-
-/**
- * Get a logger by name.
- * @param name_ The name of the logger.
- */
-#define LOG_MODULE_GET(name_) Z_GET_LOGGER(name_)
 
 /**
  * The module name registered with @ref LOG_MODULE_REGISTER
