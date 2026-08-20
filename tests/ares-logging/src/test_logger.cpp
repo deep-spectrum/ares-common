@@ -1497,6 +1497,7 @@ TEST(logger_api, log_hexdump_hex_output) {
     }
 }
 
+namespace {
 class PythonMockLogger {
   public:
     long level_ = 0;
@@ -1513,8 +1514,9 @@ class PythonMockLogger {
     void crit(const std::string &msg) { msg_crit = msg; }
 
     void set_level(long level) { level_ = level; }
-    [[nodiscard]] long level() { return level_; }
+    [[nodiscard]] long level() const { return level_; }
 };
+} // namespace
 
 TEST(logger_api, log_cb_init) {
     PythonMockLogger mock;
