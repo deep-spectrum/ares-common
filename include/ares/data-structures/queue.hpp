@@ -107,6 +107,9 @@ class queue {
 
     /**
      * Retrieve and remove an item from the queue.
+     *
+     * @param block_cb Function to call while waiting.
+     *
      * @return The first item in the queue.
      *
      * @note This will block indefinitely if there are no items in the queue.
@@ -118,6 +121,7 @@ class queue {
      * @param timeout_ms The maximum amount of time to wait for item to become
      * ready in the queue. If set to std::chrono::milliseconds::zero(), then
      * this method will become non-blocking.
+     * @param block_cb Function to call while waiting.
      * @return The first item in the queue.
      * @throws queue_exception if timeout expired.
      */
@@ -189,6 +193,7 @@ class bounded_queue {
      *
      * @tparam U A type compatible with the queue's underlying Type.
      * @param[in] item The element to be added to the queue.
+     * @param blocking_cb Function to call while waiting.
      */
     template <typename U>
     void put(U &&item, const std::function<void()> &blocking_cb = nullptr);
@@ -206,6 +211,7 @@ class bounded_queue {
      * rvalue is passed.
      * @param[in] timeout_ms The maximum duration to block if the queue is full.
      *                   If zero, the method attempts a non-blocking insertion.
+     * @param blocking_cb Function to call while waiting.
      * @throws queue_exception If the timeout expires before space becomes
      * available.
      */
@@ -233,6 +239,9 @@ class bounded_queue {
 
     /**
      * Retrieve and remove an item from the queue.
+     *
+     * @param block_cb Function to call while waiting.
+     *
      * @return The first item in the queue.
      *
      * @note This will block indefinitely if there are no items in the queue.
@@ -244,6 +253,7 @@ class bounded_queue {
      * @param[in] timeout_ms The maximum amount of time to wait for item to
      * become ready in the queue. If set to std::chrono::milliseconds::zero(),
      * then this method will become non-blocking.
+     * @param block_cb Function to call while waiting.
      * @return The first item in the queue.
      * @throws queue_exception if timeout expired.
      */
