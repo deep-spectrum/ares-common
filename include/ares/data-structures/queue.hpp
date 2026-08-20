@@ -15,6 +15,7 @@
 #include <condition_variable>
 #include <deque>
 #include <exception>
+#include <functional>
 #include <mutex>
 #include <string>
 
@@ -106,21 +107,26 @@ class queue {
 
     /**
      * Retrieve and remove an item from the queue.
+     *
+     * @param block_cb Function to call while waiting.
+     *
      * @return The first item in the queue.
      *
      * @note This will block indefinitely if there are no items in the queue.
      */
-    Type get();
+    Type get(const std::function<void()> &block_cb = nullptr);
 
     /**
      * Retrieve and remove an item from the queue with a timeout.
      * @param timeout_ms The maximum amount of time to wait for item to become
      * ready in the queue. If set to std::chrono::milliseconds::zero(), then
      * this method will become non-blocking.
+     * @param block_cb Function to call while waiting.
      * @return The first item in the queue.
      * @throws queue_exception if timeout expired.
      */
-    Type get(const std::chrono::milliseconds &timeout_ms);
+    Type get(const std::chrono::milliseconds &timeout_ms,
+             const std::function<void()> &block_cb = nullptr);
 
     /**
      * Retrieve and remove an item from the queue in a non-blocking fashion.
@@ -187,9 +193,10 @@ class bounded_queue {
      *
      * @tparam U A type compatible with the queue's underlying Type.
      * @param[in] item The element to be added to the queue.
+     * @param blocking_cb Function to call while waiting.
      */
     template <typename U>
-    void put(U &&item);
+    void put(U &&item, const std::function<void()> &blocking_cb = nullptr);
 
     /**
      * @brief Adds an item to the back of the bounded queue with a timeout.
@@ -204,11 +211,13 @@ class bounded_queue {
      * rvalue is passed.
      * @param[in] timeout_ms The maximum duration to block if the queue is full.
      *                   If zero, the method attempts a non-blocking insertion.
+     * @param blocking_cb Function to call while waiting.
      * @throws queue_exception If the timeout expires before space becomes
      * available.
      */
     template <typename U>
-    void put(U &&item, const std::chrono::milliseconds &timeout_ms);
+    void put(U &&item, const std::chrono::milliseconds &timeout_ms,
+             const std::function<void()> &blocking_cb = nullptr);
 
     /**
      * @brief Attempts to add an item to the back of the queue without blocking.
@@ -230,21 +239,26 @@ class bounded_queue {
 
     /**
      * Retrieve and remove an item from the queue.
+     *
+     * @param block_cb Function to call while waiting.
+     *
      * @return The first item in the queue.
      *
      * @note This will block indefinitely if there are no items in the queue.
      */
-    Type get();
+    Type get(const std::function<void()> &block_cb = nullptr);
 
     /**
      * Retrieve and remove an item from the queue with a timeout.
      * @param[in] timeout_ms The maximum amount of time to wait for item to
      * become ready in the queue. If set to std::chrono::milliseconds::zero(),
      * then this method will become non-blocking.
+     * @param block_cb Function to call while waiting.
      * @return The first item in the queue.
      * @throws queue_exception if timeout expired.
      */
-    Type get(const std::chrono::milliseconds &timeout_ms);
+    Type get(const std::chrono::milliseconds &timeout_ms,
+             const std::function<void()> &block_cb = nullptr);
 
     /**
      * Retrieve and remove an item from the queue in a non-blocking fashion.
@@ -291,7 +305,7 @@ class bounded_queue {
 template <typename Type>
 template <typename U>
 void queue<Type>::put(U &&item) {
-    std::unique_lock<std::mutex> guard(_lock);
+    std::unique_lock guard(_lock);
 
     _buffer.emplace_back(std::forward<U>(item));
     _size += 1;
@@ -299,10 +313,15 @@ void queue<Type>::put(U &&item) {
 }
 
 template <typename Type>
-Type queue<Type>::get() {
-    std::unique_lock<std::mutex> guard(_lock);
+Type queue<Type>::get(const std::function<void()> &block_cb) {
+    std::unique_lock guard(_lock);
 
-    _not_empty.wait(guard, [this]() { return _size != 0; });
+    _not_empty.wait(guard, [this, block_cb] {
+        if (block_cb && _size == 0) {
+            block_cb();
+        }
+        return _size != 0;
+    });
     Type ret = std::move(_buffer.front());
     _buffer.pop_front();
     _size -= 1;
@@ -311,10 +330,15 @@ Type queue<Type>::get() {
 }
 
 template <typename Type>
-Type queue<Type>::get(const std::chrono::milliseconds &timeout_ms) {
-    std::unique_lock<std::mutex> guard(_lock);
-    if (!_not_empty.wait_for(guard, timeout_ms,
-                             [this]() { return _size != 0; })) {
+Type queue<Type>::get(const std::chrono::milliseconds &timeout_ms,
+                      const std::function<void()> &block_cb) {
+    std::unique_lock guard(_lock);
+    if (!_not_empty.wait_for(guard, timeout_ms, [this, block_cb] {
+            if (block_cb && _size == 0) {
+                block_cb();
+            }
+            return _size != 0;
+        })) {
         throw queue_exception(timeout_ms == std::chrono::milliseconds::zero()
                                   ? queue_exception::QUEUE_EMPTY
                                   : queue_exception::QUEUE_TIMEOUT);
@@ -333,29 +357,35 @@ Type queue<Type>::get_nonblocking() {
 
 template <typename Type>
 size_t queue<Type>::size() {
-    std::unique_lock<std::mutex> guard(_lock);
+    std::unique_lock guard(_lock);
     return _size;
 }
 
 template <typename Type>
 bool queue<Type>::empty() {
-    std::unique_lock<std::mutex> guard(_lock);
+    std::unique_lock guard(_lock);
     return _size == 0;
 }
 
 template <typename Type>
 void queue<Type>::clear() {
-    std::unique_lock<std::mutex> guard(_lock);
+    std::unique_lock guard(_lock);
     _size = 0;
     _buffer.clear();
 }
 
 template <typename Type, size_t max_size, bool overwrite>
 template <typename U>
-void bounded_queue<Type, max_size, overwrite>::put(U &&item) {
-    std::unique_lock<std::mutex> guard(_lock);
+void bounded_queue<Type, max_size, overwrite>::put(
+    U &&item, const std::function<void()> &blocking_cb) {
+    std::unique_lock guard(_lock);
 
-    _space_available.wait(guard, [this]() { return _size != max_size; });
+    _space_available.wait(guard, [this, blocking_cb] {
+        if (blocking_cb && _size == max_size) {
+            blocking_cb();
+        }
+        return _size != max_size;
+    });
 
     _buffer[_producer_index] = std::forward<U>(item);
     _producer_index = (_producer_index + 1) % max_size;
@@ -366,10 +396,15 @@ void bounded_queue<Type, max_size, overwrite>::put(U &&item) {
 template <typename Type, size_t max_size, bool overwrite>
 template <typename U>
 void bounded_queue<Type, max_size, overwrite>::put(
-    U &&item, const std::chrono::milliseconds &timeout_ms) {
-    std::unique_lock<std::mutex> guard(_lock);
-    if (!_space_available.wait_for(guard, timeout_ms,
-                                   [this]() { return _size != max_size; })) {
+    U &&item, const std::chrono::milliseconds &timeout_ms,
+    const std::function<void()> &blocking_cb) {
+    std::unique_lock guard(_lock);
+    if (!_space_available.wait_for(guard, timeout_ms, [this, blocking_cb] {
+            if (blocking_cb && _size == max_size) {
+                blocking_cb();
+            }
+            return _size != max_size;
+        })) {
         if (!overwrite) {
             throw queue_exception(timeout_ms ==
                                           std::chrono::milliseconds::zero()
@@ -397,11 +432,17 @@ void bounded_queue<Type, max_size, overwrite>::put_nonblocking(U &&item) {
 }
 
 template <typename Type, size_t max_size, bool overwrite>
-Type bounded_queue<Type, max_size, overwrite>::get() {
-    std::unique_lock<std::mutex> guard(_lock);
+Type bounded_queue<Type, max_size, overwrite>::get(
+    const std::function<void()> &block_cb) {
+    std::unique_lock guard(_lock);
     Type ret;
 
-    _not_empty.wait(guard, [this]() { return _size != 0; });
+    _not_empty.wait(guard, [this, block_cb] {
+        if (block_cb && _size == 0) {
+            block_cb();
+        }
+        return _size != 0;
+    });
 
     ret = std::move(_buffer[_consumer_index]);
     _consumer_index = (_consumer_index + 1) % max_size;
@@ -412,12 +453,17 @@ Type bounded_queue<Type, max_size, overwrite>::get() {
 
 template <typename Type, size_t max_size, bool overwrite>
 Type bounded_queue<Type, max_size, overwrite>::get(
-    const std::chrono::milliseconds &timeout_ms) {
-    std::unique_lock<std::mutex> guard(_lock);
+    const std::chrono::milliseconds &timeout_ms,
+    const std::function<void()> &block_cb) {
+    std::unique_lock guard(_lock);
     Type ret;
 
-    if (!_not_empty.wait_for(guard, timeout_ms,
-                             [this]() { return _size != 0; })) {
+    if (!_not_empty.wait_for(guard, timeout_ms, [this, block_cb] {
+            if (block_cb && _size == 0) {
+                block_cb();
+            }
+            return _size != 0;
+        })) {
         throw queue_exception(timeout_ms == std::chrono::milliseconds::zero()
                                   ? queue_exception::QUEUE_EMPTY
                                   : queue_exception::QUEUE_TIMEOUT);
@@ -437,25 +483,25 @@ Type bounded_queue<Type, max_size, overwrite>::get_nonblocking() {
 
 template <typename Type, size_t max_size, bool overwrite>
 size_t bounded_queue<Type, max_size, overwrite>::size() {
-    std::unique_lock<std::mutex> guard(_lock);
+    std::unique_lock guard(_lock);
     return _size;
 }
 
 template <typename Type, size_t max_size, bool overwrite>
 bool bounded_queue<Type, max_size, overwrite>::empty() {
-    std::unique_lock<std::mutex> guard(_lock);
+    std::unique_lock guard(_lock);
     return _size == 0;
 }
 
 template <typename Type, size_t max_size, bool overwrite>
 bool bounded_queue<Type, max_size, overwrite>::full() {
-    std::unique_lock<std::mutex> guard(_lock);
+    std::unique_lock guard(_lock);
     return _size == max_size;
 }
 
 template <typename Type, size_t max_size, bool overwrite>
 void bounded_queue<Type, max_size, overwrite>::clear() {
-    std::unique_lock<std::mutex> guard(_lock);
+    std::unique_lock guard(_lock);
     _size = 0;
     _producer_index = 0;
     _consumer_index = 0;

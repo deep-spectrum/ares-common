@@ -11,6 +11,7 @@
 #include <ares/data-structures/queue.hpp>
 #include <chrono>
 #include <gtest/gtest.h>
+#include <helpers.hpp>
 #include <thread>
 #include <thread_utils.hpp>
 
@@ -1062,4 +1063,52 @@ TEST(queue_api, bounded_queue_multi_overwrite_multithread_competition) {
 
     ares::bounded_queue<int> cut;
     test_thread_competition(cut, 1s, "");
+}
+
+static void thread_get_no_timeout(ares::bounded_queue<int> &cut,
+                                  BlockHelper &helper, size_t num_items) {
+    for (size_t i = 0; i < num_items; i++) {
+        cut.get([&helper] { helper.increment_value(); });
+    }
+}
+
+TEST(queue_api, bounded_queue_block_cb) {
+    ares::bounded_queue<int> cut;
+    BlockHelper helper_put, helper_get;
+    size_t num_items = 10;
+
+    std::thread t1(thread_get_no_timeout, std::ref(cut), std::ref(helper_get),
+                   num_items);
+
+    for (size_t i = 0; i < num_items; i++) {
+        cut.put(0, [&helper_put] { helper_put.increment_value(); });
+    }
+
+    t1.join();
+
+    EXPECT_NE(helper_put.value, 0);
+    EXPECT_NE(helper_get.value, 0);
+
+    helper_put.value = 0;
+
+    try {
+        while (true) {
+            cut.put(0, 100ms, [&helper_put] { helper_put.increment_value(); });
+        }
+    } catch (...) {
+        // should timeout
+    }
+
+    EXPECT_NE(helper_put.value, 0);
+
+    helper_get.value = 0;
+    try {
+        while (true) {
+            cut.get(100ms, [&helper_get] { helper_get.increment_value(); });
+        }
+    } catch (...) {
+        // Should timeout
+    }
+
+    EXPECT_NE(helper_get.value, 0);
 }
