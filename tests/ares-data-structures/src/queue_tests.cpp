@@ -239,3 +239,55 @@ TEST(queue_api, queue_multithread_competition) {
         ASSERT_EQ(data[i], ret[i]);
     }
 }
+
+namespace {
+struct BlockHelper {
+    uint64_t value = 0;
+
+    void increment_value() {
+        value++;
+
+        if (value > static_cast<uint64_t>(INT64_MAX)) {
+            throw std::runtime_error("Timed out");
+        }
+    }
+};
+} // namespace
+
+static void thread_get_cb_no_timeout(BlockHelper &helper, ares::queue<int> &cut,
+                                     size_t num_expected) {
+    size_t num_received = 0;
+
+    while (num_received < num_expected) {
+        cut.get([&helper] { helper.increment_value(); });
+        num_received++;
+    }
+}
+
+TEST(queue_api, blocking_callbacks) {
+    ares::queue<int> cut;
+    size_t num_to_send = 10;
+    BlockHelper helper;
+    std::chrono::milliseconds timeout = 100ms;
+
+    std::thread t(thread_get_cb_no_timeout, std::ref(helper), std::ref(cut),
+                  num_to_send);
+
+    for (size_t i = 0; i < num_to_send; i++) {
+        cut.put(0);
+        std::this_thread::sleep_for(1ms);
+    }
+
+    t.join();
+
+    EXPECT_NE(helper.value, 0);
+
+    helper.value = 0;
+    try {
+        cut.get(timeout, [&helper] { helper.increment_value(); });
+    } catch (...) {
+        // nop
+    }
+
+    EXPECT_NE(helper.value, 0);
+}
