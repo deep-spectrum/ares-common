@@ -11,6 +11,7 @@
 #include <ares/data-structures/queue.hpp>
 #include <chrono>
 #include <gtest/gtest.h>
+#include <helpers.hpp>
 #include <thread>
 #include <thread_utils.hpp>
 
@@ -240,20 +241,6 @@ TEST(queue_api, queue_multithread_competition) {
     }
 }
 
-namespace {
-struct BlockHelper {
-    uint64_t value = 0;
-
-    void increment_value() {
-        value++;
-
-        if (value > static_cast<uint64_t>(INT64_MAX)) {
-            throw std::runtime_error("Timed out");
-        }
-    }
-};
-} // namespace
-
 static void thread_get_cb_no_timeout(BlockHelper &helper, ares::queue<int> &cut,
                                      size_t num_expected) {
     size_t num_received = 0;
@@ -264,7 +251,7 @@ static void thread_get_cb_no_timeout(BlockHelper &helper, ares::queue<int> &cut,
     }
 }
 
-TEST(queue_api, blocking_callbacks) {
+TEST(queue_api, queue_blocking_callbacks) {
     ares::queue<int> cut;
     size_t num_to_send = 10;
     BlockHelper helper;
